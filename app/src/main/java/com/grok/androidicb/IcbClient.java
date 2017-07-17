@@ -12,36 +12,48 @@ class IcbClient {
 
     private static final String LOGTAG = "IcbClient";
 
+    // events for communicating with the UI
     public static final int EVT_SOCKET_STOPPED   = 1;
-    public static final int EVT_ICB_MESSAGE   = 2;
+    public static final int EVT_LOGIN_OK         = 2;
+    public static final int EVT_OPEN_MSG         = 3;
+    public static final int EVT_PERSONAL_MSG     = 4;
+    public static final int EVT_STATUS_MSG       = 5;
+    public static final int EVT_ERROR_MSG        = 6;
+    public static final int EVT_IMPORTANT_MSG    = 7;
+    public static final int EVT_EXIT             = 8;
+    public static final int EVT_COMMAND_OUTPUT   = 9;
+    public static final int EVT_PROTOCOL         = 10;
+    public static final int EVT_BEEP             = 11;
+    public static final int EVT_PING             = 12;
+    public static final int EVT_PONG             = 13;
 
+    // cmds for communicating with the server
+    private static final byte CMD_LOGIN          = 'a';
+    private static final byte CMD_OPEN_MSG       = 'b';
+    private static final byte CMD_PERSONAL_MSG   = 'c';
+    private static final byte CMD_STATUS_MSG     = 'd';
+    private static final byte CMD_ERROR_MSG      = 'e';
+    private static final byte CMD_IMPORTANT_MSG  = 'f';
+    private static final byte CMD_EXIT           = 'g';
+    private static final byte CMD_COMMAND        = 'h';
+    private static final byte CMD_COMMAND_OUTPUT = 'i';
+    private static final byte CMD_PROTOCOL       = 'j';
+    private static final byte CMD_BEEP           = 'k';
+    private static final byte CMD_PING           = 'l';
+    private static final byte CMD_PONG           = 'm';
+    private static final byte CMD_NOOP           = 'n';
+
+
+    public static final int MAX_ICB_PACKET_LENGTH = 255;  // including the command byte, but NOT the length byte
 
     Handler mAppHandler;
     IcbReadThread mReadThread;
     IcbWriteThread mWriteThread;
 
-    private class IcbMessage {
-        public int length;
-        public int action;
-        public boolean haveFullPkt;
-
-        public ByteArrayOutputStream buffer;
-
-        public IcbMessage() {
-            length = -1;
-            action = -1;
-            buffer = new ByteArrayOutputStream();
-        }
-    };
-
-    IcbMessage mIcbMessage;
-
     private static final Boolean verbose = false;
 
     public IcbClient(SocketConnection connection, Handler handler) {
         mAppHandler = handler;
-
-        mIcbMessage = null;
 
         LogUtil.INSTANCE.d(LOGTAG, "Starting IcbClient. Launching threads");
 
@@ -74,7 +86,6 @@ class IcbClient {
     public synchronized void onReadThreadExit(int err)
     {
         LogUtil.INSTANCE.d(LOGTAG, "onReadThreadExit");
-        mIcbMessage = null;
         mReadThread = null;
         if (mWriteThread != null) {
             mWriteThread.notifyStop();
@@ -110,11 +121,6 @@ class IcbClient {
             index += amountRead;
         }
         return readBuffer;
-    }
-
-    public synchronized void reset()
-    {
-        mIcbMessage = null;
     }
 
     // handle input typed into the input box by the user
@@ -185,137 +191,81 @@ class IcbClient {
     }
 
 
-    // XXX problem:
-    // When the lower level connects, it will search for a lower-level packet and assure that
-    // that's on a proper boundary, but it does not guarantee that that will be on the bounds
-    // of an upper-layer packet (i.e. this layer).
-    // So, we may need to make a marker or something to search for in the upper-layer, just
-    // like we do for the lower layer.
-    public synchronized void process(InputStream istream) {
-        int avail = 0;
-        try {
-            while ((avail = istream.available()) > 0) {
-                if (mAOAMessage == null || !mAOAMessage.haveFullHeader) { // not in a message
-                    if (mAOAMessage == null) {
-                        if (verbose) {
-                            LogUtil.INSTANCE.d(LOGTAG, "Starting new packet");
-                        }
-                        mAOAMessage = new AOAMessage();
-                    } else {
-                        if (verbose) {
-                            LogUtil.INSTANCE.d(LOGTAG, "Resuming previously started packet.");
-                        }
-                    }
-
-                    if (mAOAMessage.destPort == -1 && istream.available() < 2) {
-                        return;
-                    }
-                    mAOAMessage.destPort = Utilities.readInt16(istream);
-
-                    if (mAOAMessage.srcPort == -1 && istream.available() < 2) {
-                        return;
-                    }
-                    mAOAMessage.srcPort = Utilities.readInt16(istream);
-
-                    if (mAOAMessage.len == -1 && istream.available() < 4) {
-                        return;
-                    }
-                    mAOAMessage.len = Utilities.readInt32(istream);
-
-                    if (mAOAMessage.version == -1 && istream.available() < 1) {
-                        return;
-                    }
-                    mAOAMessage.version = Utilities.readByte(istream);
-
-                    if (mAOAMessage.opCode == -1 && istream.available() < 1) {
-                        return;
-                    }
-                    mAOAMessage.opCode = Utilities.readByte(istream);
-
-                    mAOAMessage.haveFullHeader = true;
-                    if (verbose) {
-                        LogUtil.INSTANCE.d(LOGTAG, "destPort: " + mAOAMessage.destPort);
-                        LogUtil.INSTANCE.d(LOGTAG, "srcPort: " + mAOAMessage.srcPort);
-                        LogUtil.INSTANCE.d(LOGTAG, "len: " + mAOAMessage.len);
-                        LogUtil.INSTANCE.d(LOGTAG, "version: " + mAOAMessage.version);
-                        LogUtil.INSTANCE.d(LOGTAG, "opCode: " + mAOAMessage.opCode);
-                    }
-
-                }
-
-                // The lower level just guarantees that it got a complete lower-level packet. This
-                // may not be enough to make an upper-level packet. So, if len is shorter than
-                // bytes available, we need to spin around and gather more.
-                int bytesToRead = mAOAMessage.len - mAOAMessage.buffer.size();
-                if (verbose) {
-                    LogUtil.INSTANCE.d(LOGTAG, "Need to read " + bytesToRead + " bytes to fill this packet.");
-                }
-                avail = istream.available();
-                if (avail < bytesToRead) {
-                    if (verbose) {
-                        LogUtil.INSTANCE.d(LOGTAG, "Only " + avail + " bytes available for reading.");
-                    }
-                    bytesToRead = avail;
-                }
-
-                mAOAMessage.buffer.write(readBuffer(istream, bytesToRead));
-
-                if (mAOAMessage.buffer.size() == mAOAMessage.len) {
-                    LogUtil.INSTANCE.d(LOGTAG, "Packet is complete, with " + mAOAMessage.buffer.size() + " bytes.");
-                    // check and dispatch
-                    if (verbose) {
-                        int dumpLen = (mAOAMessage.len > 32 ? 32 : mAOAMessage.len);
-                        if (dumpLen < 32) {
-                            LogUtil.INSTANCE.d(LOGTAG, "data: " + Utilities.hexdump(mAOAMessage.buffer.toByteArray(), 0, dumpLen));
-                        } else {
-                            byte[] tmpbuf = mAOAMessage.buffer.toByteArray();
-                            LogUtil.INSTANCE.d(LOGTAG, "data: ");
-                            LogUtil.INSTANCE.d(LOGTAG, Utilities.hexdump(tmpbuf, 0, 16));
-                            LogUtil.INSTANCE.d(LOGTAG, "...");
-                            LogUtil.INSTANCE.d(LOGTAG, Utilities.hexdump(tmpbuf, tmpbuf.length - 16, 16));
-                        }
-                    }
-
-                    if (mAOAMessage.version != AOADefs.AOA_MESSAGE_VERSION) {
-                        LogUtil.INSTANCE.d(LOGTAG, "Unknown version. Skipping");
-                    } else if (!isValidOpCode(mAOAMessage.opCode)) {
-                        LogUtil.INSTANCE.d(LOGTAG, "Invalid opCode. Skipping");
-                    } else {
-                        if (verbose) {
-                            LogUtil.INSTANCE.d(LOGTAG, "DISPATCHING");
-                        }
-                        dispatch(mAOAMessage.opCode, mAOAMessage.destPort, mAOAMessage.buffer.toByteArray());
-                    }
-
-                    // and reset
-                    mAOAMessage = null;
-                }
-            }
-        } catch (IOException e) {
-            LogUtil.INSTANCE.d(LOGTAG, "process() IOException error " + e.getMessage() + "\n" + e.getMessage());
-        } catch (Exception e) {
-            LogUtil.INSTANCE.d(LOGTAG, "process() Unknown Exception error " + e.getMessage() + "\n" + e.getMessage());
-        }
-    }
-
     boolean isValidOpCode(int opCode) {
         return ((opCode >= AOAProtocolDefs.CMD_PROTO_VERSION) && (opCode < AOAProtocolDefs.CMD_NULL));
     }
 
-    private void dispatch(int opCode, int destId, byte[] data) {
+    // we're still in the ReadThread's context here, so to get things to the app we'll have to
+    // get a message. Mostly we'll do all the parsing here and just send a limited subset of
+    // messages up to the app when we're done.
+    private void dispatch(byte[] packetData) {
         Message msg;
-        switch (opCode) {
-            case AOAProtocolDefs.CMD_TEXT:
-                LogUtil.INSTANCE.d(LOGTAG, "Opcode CMD_TEXT");
-                String text = new String(data); // convert to a readable string. Just using toString won't do it
-                msg = mAppHandler.obtainMessage(AOADefs.EVT_AOA_MESSAGE, AOAProtocolDefs.CMD_TEXT, destId, text);  // what, arg1, arg2, obj
+        switch (packetData[0]) {
+            case CMD_LOGIN:
+                // not really sure what to do with this. Just toss it up to the UI, I guess.
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_LOGIN");
+                msg = mAppHandler.obtainMessage(EVT_LOGIN_OK);
                 mAppHandler.sendMessage(msg);
                 break;
-            case AOAProtocolDefs.CMD_IMAGE:
-                LogUtil.INSTANCE.d(LOGTAG, "Opcode CMD_IMAGE");
-                msg = mAppHandler.obtainMessage(AOADefs.EVT_AOA_MESSAGE, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+            case CMD_OPEN_MSG:
+                LogUtil.INSTANCE.d(LOGTAG, "Opcode CMD_OPEN_MSG");
+                msg = mAppHandler.obtainMessage(EVT_OPEN_MSG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
                 mAppHandler.sendMessage(msg);
                 break;
+            case CMD_PERSONAL_MSG:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_PERSONAL_MSG");
+                msg = mAppHandler.obtainMessage(EVT_PERSONAL_MSG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_STATUS_MSG:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_STATUS_MSG");
+                msg = mAppHandler.obtainMessage(EVT_STATUS_MSG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_ERROR_MSG:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_ERROR_MSG");
+                msg = mAppHandler.obtainMessage(EVT_ERROR_MSG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_IMPORTANT_MSG:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_IMPORTANT_MSG");
+                msg = mAppHandler.obtainMessage(EVT_IMPORTANT_MSG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_EXIT:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_EXIT");
+                msg = mAppHandler.obtainMessage(EVT_EXIT, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_COMMAND_OUTPUT:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_COMMAND_OUTPUT");
+                msg = mAppHandler.obtainMessage(EVT_COMMAND_OUTPUT, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_PROTOCOL:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_PROTOCOL");
+                msg = mAppHandler.obtainMessage(EVT_PROTOCOL, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_BEEP:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_BEEP");
+                msg = mAppHandler.obtainMessage(EVT_BEEP, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_PING:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_PING");
+                msg = mAppHandler.obtainMessage(EVT_PING, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_PONG:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_PONG");
+                msg = mAppHandler.obtainMessage(EVT_PONG, AOAProtocolDefs.CMD_IMAGE, destId, data);  // what, arg1, arg2, obj
+                mAppHandler.sendMessage(msg);
+                break;
+            case CMD_NOOP:
+                LogUtil.INSTANCE.d(LOGTAG, "CMD_NOOP");
+                break;
+            case CMD_COMMAND:
             default:
                 LogUtil.INSTANCE.d(LOGTAG, "Unhandled OpCode: " + opCode);
                 // do nothing
