@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import static com.grok.androidicb.IcbClient.MAX_ICB_PACKET_LENGTH;
+import static com.grok.androidicb.protocol.ICBProtocol.MAX_OPEN_MESSAGE_SIZE;
 
 /**
  *
@@ -38,10 +39,9 @@ public class IcbWriteThread implements Runnable {
         byte[] msg = new byte[dataLen + 2];
 
         // For now, truncate if the message is too long. In the future, we should
-        // generate two packets. Note that we need to reserve a byte for the command
-        // byte so it's (MAX_ICB_PACKET_LENGTH - 1).
-        if (dataLen > (MAX_ICB_PACKET_LENGTH - 1)) {
-            dataLen = (MAX_ICB_PACKET_LENGTH - 1);
+        // generate multiple packets.
+        if (dataLen > MAX_OPEN_MESSAGE_SIZE) {
+            dataLen = MAX_OPEN_MESSAGE_SIZE;
         }
 
         // copy in the data. arraycopy(src, srcPos, dst, dstPos, numElem)

@@ -79,12 +79,7 @@ public class IcbReadThread implements Runnable {
                         continue;
                     }
 
-                    // reset everything
                     pb = null;
-                    if (mIcbClient != null) {
-                        mIcbClient.reset();
-                    }
-
                     continue;
                 }
 
@@ -153,7 +148,7 @@ public class IcbReadThread implements Runnable {
                     }
 
                     if (mIcbClient != null) {
-                        mIcbClient.dispatch(pb.mBuffer);
+                        mIcbClient.dispatch(new String(pb.mBuffer));
                     }
                     pb = null;
                 }
