@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
-import static com.grok.androidicb.IcbClient.MAX_ICB_PACKET_LENGTH;
 import static com.grok.androidicb.protocol.ICBProtocol.MAX_OPEN_MESSAGE_SIZE;
 
 /**
@@ -24,48 +23,43 @@ public class IcbWriteThread implements Runnable {
 
     private Boolean mStop = false;
 
-    private ArrayList<byte[]> mMessageList = null;
+    private ArrayList<byte[]> mPacketList = null;
 
     public IcbWriteThread(IcbClient pd, SocketConnection connection) {
         LogUtil.INSTANCE.d(LOGTAG, "initializing");
         mProtocolDispatcher = pd;
         mConnection = connection;
-        mMessageList = new ArrayList<>();
+        mPacketList = new ArrayList<>();
     }
 
-    public void addMessage(char cmd, String data) {
+    public void sendPacket(String data) {
 
         int dataLen = data.length();
-        byte[] msg = new byte[dataLen + 2];
 
-        // For now, truncate if the message is too long. In the future, we should
-        // generate multiple packets.
+        // For now, truncate if the message is too long. Throw an exception or something - this
+        // should never happen at this level.
         if (dataLen > MAX_OPEN_MESSAGE_SIZE) {
             dataLen = MAX_OPEN_MESSAGE_SIZE;
         }
 
-        // copy in the data. arraycopy(src, srcPos, dst, dstPos, numElem)
+        byte[] pkt = new byte[dataLen];
         try {
-            System.arraycopy(data.getBytes("UTF8"), 0, msg, 2, dataLen);
+            System.arraycopy(data.getBytes("UTF8"), 0, pkt, 0, dataLen);
         } catch (java.io.UnsupportedEncodingException e) {
             LogUtil.INSTANCE.d(LOGTAG, "Can't convert data to UTF8 : " + data);
             return;
         }
 
-        // set packet stuff
-        msg[0] = (byte)((dataLen + 1) & 0xFF);
-        msg[1] = (byte)(cmd & 0xFF);
-
         synchronized(this) {
-            mMessageList.add(msg);
+            mPacketList.add(pkt);
         }
     }
 
     private synchronized byte[] getNextMessage() {
-        if (mMessageList.isEmpty()) {
+        if (mPacketList.isEmpty()) {
             return null;
         }
-        return mMessageList.remove(0);
+        return mPacketList.remove(0);
     }
 
     public void run() {

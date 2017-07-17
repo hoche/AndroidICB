@@ -3,6 +3,9 @@ package com.grok.androidicb;
 import android.os.Handler;
 import android.os.Message;
 
+import com.grok.androidicb.protocol.CommandPacket;
+import com.grok.androidicb.protocol.ICBProtocol;
+import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.Packet;
 
 import java.io.ByteArrayInputStream;
@@ -29,9 +32,6 @@ class IcbClient {
     public static final int EVT_BEEP             = 11;
     public static final int EVT_PING             = 12;
     public static final int EVT_PONG             = 13;
-
-
-    public static final int MAX_ICB_PACKET_LENGTH = 255;  // including the command byte, but NOT the length byte
 
     Handler mAppHandler;
     IcbReadThread mReadThread;
@@ -110,73 +110,136 @@ class IcbClient {
         return readBuffer;
     }
 
-    // handle input typed into the input box by the user
-    public void processInput(String line)
-    {
-        if (line.charAt(0) == '/') {
-
-            if (!line.contains(" ")) {
-                LogUtil.INSTANCE.d(LOGTAG, "Wrong number of args. No target name.");
-                return;
+    private String removeControlCharacters(String s) {
+        StringBuffer buf = new StringBuffer(s.length());
+        char c;
+        for (int i = 0, n = s.length(); i < n; i++) {
+            c = s.charAt(i);
+            if (Character.isWhitespace(c)) {
+                buf.append(' ');
+            } else if (!Character.isISOControl(c)) {
+                buf.append((c == '\n') ? ' ' : c);
             }
+        }
+        return buf.toString();
+    }
 
-            String[] holder = line.split(" ", 3);
-            if (holder.length < 3) {
-
-                // handle 2-part commands here - /beep, /kick, /p etc
-                if (holder[0].equalsIgnoreCase("/beep")) {
-                    sendBeep(holder[1]);
-                    return;
-                }
-
-                LogUtil.INSTANCE.d(LOGTAG, "Unknown command." + holder[0]);
-                return;
-            }
-
-            // handle 3-part commands here
-            if (holder[0].equalsIgnoreCase("/m")) {
-                sendPrivateMessage(holder[1], holder[2]);
-                return;
-            }
-
-            LogUtil.INSTANCE.d(LOGTAG, "Unknown command." + holder[0]);
+    public void sendCommand(String cmd) {
+        int cmdLength = cmd.length();
+        if (cmd == null || cmdLength == 0) {
             return;
         }
-        sendOpenMessage(line);
-    }
 
-    private void sendOpenMessage(String line) {
-        int maxdatalen = 254 - 1; // extra room for null byte
-        while (line.length() > maxdatalen) {
-            String sendPart = line.substring(0, maxdatalen) + '\0';
-            mWriteThread.addMessage('b', sendPart);
-            line = line.substring(maxdatalen + 1);
-        }
-        if (line.length() > 0) {
-            mWriteThread.addMessage('b', line + '\0');
-        }
-    }
+        // if the command does not begin with the command character, go ahead
+        // and send it as an open message
+        if (cmd.charAt(0) != '/') {
+            sendOpenMessage(cmd);
 
-    // hm\001nick message
-    private void sendPrivateMessage(String who, String line)
-    {
-        int maxdatalen = 253 - who.length() - 4;
-        while (line.length() > maxdatalen) {
-            String sendPart = 'm' + '\001' + who + ' ' + line.substring(0, maxdatalen) + '\0';
-            mWriteThread.addMessage('h', sendPart);
-            line = line.substring(maxdatalen + 1);
-        }
-        if (line.length() > 0) {
-            mWriteThread.addMessage('h', 'm' + '\001' + who + ' ' + line + '\0');
+            // if the command does begin with the command character, but it is
+            // escaped by another command character, send it as an open message
+        } else if (cmdLength > 1 && cmd.charAt(1) == '/') {
+            sendOpenMessage(cmd.substring(1));
+
+            // otherwise, go ahead and send the command to the server
+        } else {
+            sendPersonalMessage("server", cmd.substring(1));
         }
     }
 
-    // hbeep\001nick
-    private void sendBeep(String who)
-    {
-        mWriteThread.addMessage('h', "beep" + '\001' + who + '\0');
+    /**
+     * Sends the provided text string as an open message to the
+     * user's current group.
+     */
+    public void sendOpenMessage(String msg) {
+        msg = removeControlCharacters(msg);
+
+        /* send the message in maximum sized chunks */
+        String currentMsg;
+        String remaining = msg;
+        int n;
+        do {
+            if (remaining.length() > ICBProtocol.MAX_OPEN_MESSAGE_SIZE) {
+                currentMsg = remaining.substring(0, ICBProtocol.MAX_OPEN_MESSAGE_SIZE);
+                n = currentMsg.lastIndexOf(' ');
+                if (n > 0) {
+                    currentMsg = currentMsg.substring(0, n + 1);
+                }
+                remaining = remaining.substring(currentMsg.length());
+            } else {
+                currentMsg = remaining;
+                remaining = "";
+            }
+
+            OpenPacket p = new OpenPacket();
+            p.setText(currentMsg);
+            mWriteThread.sendPacket(p.toString());
+
+        } while (remaining.length() > 0);
     }
 
+    /**
+     * Sends the provided text string as a personal message to the
+     * specified user.
+     */
+    public void sendPersonalMessage(String nick, String origMsg) {
+        String msg = removeControlCharacters(origMsg);
+
+        // send the message in chunks
+        String currentMsg;
+        String remaining = msg;
+        int n;
+        do {
+            if (remaining.length() > ICBProtocol.MAX_PERSONAL_MESSAGE_SIZE) {
+                currentMsg = remaining.substring(0, ICBProtocol.MAX_PERSONAL_MESSAGE_SIZE);
+                n = currentMsg.lastIndexOf(' ');
+                if (n > 0) {
+                    currentMsg = currentMsg.substring(0, n + 1);
+                }
+                remaining = remaining.substring(currentMsg.length());
+            } else {
+                currentMsg = remaining;
+                remaining = "";
+            }
+
+            StringBuffer buf = new StringBuffer(nick.length() + 1 + currentMsg.length());
+            buf.append(nick).append(' ').append(currentMsg);
+            sendCommandMessage("m", buf.toString());
+
+        } while (remaining.length() > 0);
+
+    }
+
+    public void sendWriteMessage(String nick, String origMsg) {
+        String msg = removeControlCharacters(origMsg);
+
+        String currentMsg;
+        String remaining = msg;
+        int n;
+        do {
+            if (remaining.length() > ICBProtocol.MAX_WRITE_MESSAGE_SIZE) {
+                currentMsg = remaining.substring(0, ICBProtocol.MAX_WRITE_MESSAGE_SIZE);
+                n = currentMsg.lastIndexOf(' ');
+                if (n > 0) {
+                    currentMsg = currentMsg.substring(0, n + 1);
+                }
+                remaining = remaining.substring(currentMsg.length());
+            } else {
+                currentMsg = remaining;
+                remaining = "";
+            }
+
+            StringBuffer buf = new StringBuffer(nick.length() + 15 + currentMsg.length()); // 7 = "server write  "
+            buf.append("server write ").append(nick).append(' ').append(currentMsg);
+            sendCommandMessage("m", buf.toString());
+        } while (remaining.length() > 0);
+    }
+
+    /**
+     * Sends the specified command and argument text to the server.
+     */
+    public void sendCommandMessage(final String command, final String msg) {
+        mWriteThread.sendPacket(new CommandPacket(command, msg).toString());
+    }
 
 
     /*****************************************************************************
