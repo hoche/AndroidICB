@@ -13,6 +13,8 @@ package com.grok.androidicb;
  */
 
 import android.app.Activity;
+import android.os.Handler;
+import android.os.Message;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +25,7 @@ import java.net.Socket;
 public class SocketConnection implements Runnable {
     private static final String LOGTAG = "SocketConnection";
 
-    Activity mActivity;
+    Handler mAppHandler;
     String mDstHost;
     int mDstPort;
     InputStream mInputStream = null;
@@ -32,9 +34,9 @@ public class SocketConnection implements Runnable {
     boolean mIOFailed;
 
 
-    public SocketConnection(Activity activity, String dstHost, int dstPort) {
+    public SocketConnection(String dstHost, int dstPort, Handler handler) {
 
-        mActivity = activity;
+        mAppHandler = handler;
         mDstHost = dstHost;
         mDstPort = dstPort;
         mIOFailed = false;
@@ -82,6 +84,11 @@ public class SocketConnection implements Runnable {
                     LogUtil.INSTANCE.d(LOGTAG, "mInputStream: " + mInputStream + "   mOutputStream: " + mOutputStream);
 
                     mIOFailed = false;
+
+                    LogUtil.INSTANCE.d(LOGTAG, "EVT_SOCKET_CONNECTED");
+                    Message msg = mAppHandler.obtainMessage(AppMessages.EVT_SOCKET_CONNECTED);
+                    mAppHandler.sendMessage(msg);
+
                 } catch (java.net.UnknownHostException e) {
                     LogUtil.INSTANCE.d(LOGTAG, "SocketConnection() UnknownHostException: " + e.getMessage());
                 } catch (IOException e) {

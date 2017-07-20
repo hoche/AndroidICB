@@ -8,30 +8,14 @@ import com.grok.androidicb.protocol.ICBProtocol;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.Packet;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ProtocolException;
 
+
 class IcbClient {
 
     private static final String LOGTAG = "IcbClient";
-
-    // events for communicating with the UI
-    public static final int EVT_SOCKET_STOPPED   = 1;
-    public static final int EVT_LOGIN_OK         = 2;
-    public static final int EVT_OPEN_MSG         = 3;
-    public static final int EVT_PERSONAL_MSG     = 4;
-    public static final int EVT_STATUS_MSG       = 5;
-    public static final int EVT_ERROR_MSG        = 6;
-    public static final int EVT_IMPORTANT_MSG    = 7;
-    public static final int EVT_EXIT             = 8;
-    public static final int EVT_COMMAND_OUTPUT   = 9;
-    public static final int EVT_PROTOCOL         = 10;
-    public static final int EVT_BEEP             = 11;
-    public static final int EVT_PING             = 12;
-    public static final int EVT_PONG             = 13;
 
     Handler mAppHandler;
     IcbReadThread mReadThread;
@@ -78,7 +62,7 @@ class IcbClient {
             mWriteThread.notifyStop();
         } else {
             LogUtil.INSTANCE.d(LOGTAG, "Sending stop message to main app");
-            mAppHandler.sendMessage(mAppHandler.obtainMessage(IcbClient.EVT_SOCKET_STOPPED));
+            mAppHandler.sendMessage(mAppHandler.obtainMessage(AppMessages.EVT_SOCKET_STOPPED));
         }
     }
 
@@ -91,7 +75,7 @@ class IcbClient {
             mReadThread.notifyStop();
         } else {
             LogUtil.INSTANCE.d(LOGTAG, "Sending stop message to main app");
-            mAppHandler.sendMessage(mAppHandler.obtainMessage(IcbClient.EVT_SOCKET_STOPPED));
+            mAppHandler.sendMessage(mAppHandler.obtainMessage(AppMessages.EVT_SOCKET_STOPPED));
         }
     }
 
@@ -256,37 +240,37 @@ class IcbClient {
                 case PKT_LOGIN:
                     // not really sure what to do with this. Just toss it up to the UI, I guess.
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_LOGIN");
-                    msg = mAppHandler.obtainMessage(EVT_LOGIN_OK);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_LOGIN_OK);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_OPEN:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_OPEN");
-                    msg = mAppHandler.obtainMessage(EVT_OPEN_MSG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_OPEN_MSG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_PERSONAL:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PERSONAL");
-                    msg = mAppHandler.obtainMessage(EVT_PERSONAL_MSG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_PERSONAL_MSG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_STATUS:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_STATUS");
-                    msg = mAppHandler.obtainMessage(EVT_STATUS_MSG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_STATUS_MSG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_ERROR:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_ERROR");
-                    msg = mAppHandler.obtainMessage(EVT_ERROR_MSG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_ERROR_MSG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_IMPORTANT:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_IMPORTANT");
-                    msg = mAppHandler.obtainMessage(EVT_IMPORTANT_MSG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_IMPORTANT_MSG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_EXIT:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_EXIT");
-                    msg = mAppHandler.obtainMessage(EVT_EXIT, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_EXIT, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_COMMAND:
@@ -294,28 +278,28 @@ class IcbClient {
                     break;
                 case PKT_COMMAND_OUT:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_COMMAND_OUT");
-                    msg = mAppHandler.obtainMessage(EVT_COMMAND_OUTPUT, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_COMMAND_OUTPUT, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_PROTOCOL:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PROTOCOL");
-                    msg = mAppHandler.obtainMessage(EVT_PROTOCOL, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_PROTOCOL, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_BEEP:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_BEEP");
-                    msg = mAppHandler.obtainMessage(EVT_BEEP, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_BEEP, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_PING:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PING");
-                    msg = mAppHandler.obtainMessage(EVT_PING, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_PING, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     // also create a new ping messge here.
                     break;
                 case PKT_PONG:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PONG");
-                    msg = mAppHandler.obtainMessage(EVT_PONG, 0, 0, pkt);
+                    msg = mAppHandler.obtainMessage(AppMessages.EVT_PONG, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;
                 case PKT_NOOP:

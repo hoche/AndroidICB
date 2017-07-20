@@ -1,10 +1,40 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        android:title="Some Preference Category">
-        <CheckBoxPreference
-            android:key="PREF_CHECKBOX"
-            android:title="Checkbox"
-            android:summary="Checkbox description" />
+        android:title="Connection">
+        <EditTextPreference
+            android:defaultValue="@string/default_server"
+            android:key="server_preference"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Server" />
+        <EditTextPreference
+            android:defaultValue="@string/default_port"
+            android:inputType="number"
+            android:key="port_preference"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Port" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="User">
+        <EditTextPreference
+            android:key="nick_preference"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Nickname" />
+        <EditTextPreference
+            android:key="password_preference"
+            android:password="true"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Password" />
+        <EditTextPreference
+            android:key="group_preference"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Group" />
     </PreferenceCategory>
 </PreferenceScreen>

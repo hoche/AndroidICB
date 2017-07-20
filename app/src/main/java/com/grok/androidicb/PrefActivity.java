@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
+import android.preference.PreferenceActivity;
 import android.text.TextWatcher;
 import android.widget.EditText;
 
@@ -12,7 +13,7 @@ import android.widget.EditText;
 /**
  * Created by hoche on 2/28/2016.
  */
-public class PrefActivity extends Activity {
+public class PrefActivity extends PreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
