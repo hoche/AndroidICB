@@ -22,6 +22,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+/*
+Packet Type: 'a' (Login)
+Fields: Minimum: 5, Maximum: 7
+    Field 0: Login id of user. Required.
+    Field 1: Nickname to use upon login into ICB. Required.
+    Field 2: Default group to log into in ICB, or do group who of. A null string for who listing will show all groups. Required.
+    Field 3: Login command. Required. Currently one of the following:
+    "login" log into ICB
+    "w" just show who is currently logged into ICB
+    Field 4: Password to authenticate the user to ICB. Required, but often blank.
+    Field 5: If when logging in, default group (field 2) does not exist, create it with this status. Optional.
+    Field 6: Protocol level. Optional. Deprecated.
+
+Thus the ICB Login Packet has the following layout:
+
+aLoginid^ANickname^ADefaultGroup^ACommand^APassword^AGroupStatus^AProtocolLevel
+ */
+
 package com.grok.androidicb.protocol;
 
 import java.net.ProtocolException;

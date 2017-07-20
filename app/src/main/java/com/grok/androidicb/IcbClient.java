@@ -5,12 +5,15 @@ import android.os.Message;
 
 import com.grok.androidicb.protocol.CommandPacket;
 import com.grok.androidicb.protocol.ICBProtocol;
+import com.grok.androidicb.protocol.LoginPacket;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.Packet;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ProtocolException;
+
+import static com.grok.androidicb.Utilities.hexdump;
 
 
 class IcbClient {
@@ -106,6 +109,13 @@ class IcbClient {
             }
         }
         return buf.toString();
+    }
+
+    public void sendLogin(String id, String nick, String group, String command,
+                     String passwd)
+    {
+        LoginPacket pkt = new LoginPacket(id, nick, group, command, passwd);
+        mWriteThread.sendPacket(pkt.toString());
     }
 
     public void sendCommand(String cmd) {

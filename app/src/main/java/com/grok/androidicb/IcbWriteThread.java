@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import static com.grok.androidicb.Utilities.hexdump;
 import static com.grok.androidicb.protocol.ICBProtocol.MAX_OPEN_MESSAGE_SIZE;
 
 /**
@@ -16,7 +17,9 @@ import static com.grok.androidicb.protocol.ICBProtocol.MAX_OPEN_MESSAGE_SIZE;
  *
  */
 public class IcbWriteThread implements Runnable {
+
     private static final String LOGTAG = "IcbWriteThread";
+    private static final Boolean verbose = true;
 
     private IcbClient mProtocolDispatcher;
     private SocketConnection mConnection;
@@ -42,9 +45,10 @@ public class IcbWriteThread implements Runnable {
             dataLen = MAX_OPEN_MESSAGE_SIZE;
         }
 
-        byte[] pkt = new byte[dataLen];
+        byte[] pkt = new byte[dataLen + 1];
+        pkt[0] = (byte)(dataLen & 0xFF);
         try {
-            System.arraycopy(data.getBytes("UTF8"), 0, pkt, 0, dataLen);
+            System.arraycopy(data.getBytes("UTF8"), 0, pkt, 1, dataLen);
         } catch (java.io.UnsupportedEncodingException e) {
             LogUtil.INSTANCE.d(LOGTAG, "Can't convert data to UTF8 : " + data);
             return;
@@ -107,7 +111,9 @@ public class IcbWriteThread implements Runnable {
                     continue;
                 }
 
-                LogUtil.INSTANCE.d(LOGTAG, "Sending message.");
+                if (verbose) {
+                    LogUtil.INSTANCE.d(LOGTAG, "Sending message: " + hexdump(msg, 0, msg.length));
+                }
                 if (ostream == null) {
                     if (mStop) {
                         continue;

@@ -3,7 +3,7 @@ package com.grok.androidicb;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.grok.androidicb.IcbClient.MAX_ICB_PACKET_LENGTH;
+import static com.grok.androidicb.Utilities.hexdump;
 
 /**
  *
@@ -16,6 +16,7 @@ import static com.grok.androidicb.IcbClient.MAX_ICB_PACKET_LENGTH;
  */
 public class IcbReadThread implements Runnable {
     private static final String LOGTAG = "IcbReadThread";
+    private static final Boolean verbose = true;
 
     private IcbClient mIcbClient = null;
     private SocketConnection mConnection = null;
@@ -33,8 +34,6 @@ public class IcbReadThread implements Runnable {
             mBuffer = new byte[size];
         }
     }
-
-    private static final Boolean verbose = false;
 
     public IcbReadThread(IcbClient pd, SocketConnection connection) {
 
@@ -108,37 +107,40 @@ public class IcbReadThread implements Runnable {
                         continue;
                     }
 
+                    if (verbose) {
+                        LogUtil.INSTANCE.d(LOGTAG, "run(): Got packet length of " + packetSize);
+                    }
                     pb = new IcbPacketBuffer(packetSize);
 
-                } else {
-                    if (verbose) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): Trying to read " + (pb.mSize - pb.mOffset) + " bytes into offset " +  pb.mOffset);
-                    }
-                    ret = istream.read(pb.mBuffer, pb.mOffset, pb.mSize - pb.mOffset);
-                    if (ret == -1) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): Got EOF.");
-                        mConnection.notifyReadFailed();
+                }
 
-                        if (mStop) {
-                            continue;
-                        }
+                if (verbose) {
+                    LogUtil.INSTANCE.d(LOGTAG, "run(): Trying to read " + (pb.mSize - pb.mOffset) + " bytes into offset " +  pb.mOffset);
+                }
+                ret = istream.read(pb.mBuffer, pb.mOffset, pb.mSize - pb.mOffset);
+                if (ret == -1) {
+                    LogUtil.INSTANCE.d(LOGTAG, "run(): Got EOF.");
+                    mConnection.notifyReadFailed();
 
-                        try {
-                            Thread.sleep(100);  // wait 100mS (this can be made shorter)
-                        } catch (InterruptedException e) {
-                            LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                        }
-
+                    if (mStop) {
                         continue;
                     }
 
-                    pb.mOffset += ret;
-                    if (verbose) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + ret + " bytes. Moving offset to " + pb.mOffset);
+                    try {
+                        Thread.sleep(100);  // wait 100mS (this can be made shorter)
+                    } catch (InterruptedException e) {
+                        LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
                     }
+
+                    continue;
                 }
 
-                if (pb.mSize == pb.mSize) {
+                pb.mOffset += ret;
+                if (verbose) {
+                    LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + ret + " bytes. Moving offset to " + pb.mOffset);
+                }
+
+                if (pb.mOffset == pb.mSize) {
                     if (verbose) {
                         LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + pb.mSize + " bytes. Parsing buffer and resetting offset to 0.");
                     }
@@ -148,6 +150,9 @@ public class IcbReadThread implements Runnable {
                     }
 
                     if (mIcbClient != null) {
+                        if (verbose) {
+                            LogUtil.INSTANCE.d(LOGTAG, hexdump(pb.mBuffer, 0, pb.mSize));
+                        }
                         mIcbClient.dispatch(new String(pb.mBuffer));
                     }
                     pb = null;
