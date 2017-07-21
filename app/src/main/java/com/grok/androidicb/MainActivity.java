@@ -6,28 +6,88 @@ import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spanned;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.grok.androidicb.protocol.Packet;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.PersonalPacket;
 import com.grok.androidicb.protocol.StatusPacket;
 
+import java.util.ArrayList;
+
+import static android.text.Html.FROM_HTML_MODE_COMPACT;
+
 
 public class MainActivity extends AppCompatActivity implements Callback {
 
-    Context mContext = null;
-    Handler mHandler = null;
 
-    WebView mWebView = null;
-    EditText mInput = null;
-    Button mSubmit = null;
-    StringBuffer mHtmlData;
+    // Custom adapter to display Spanned (HTML) data in ListView.
+    private static class SpannedAdapter extends BaseAdapter {
+        private LayoutInflater mInflater;
+        private ArrayList<Spanned> mMessageList;
+
+        public SpannedAdapter(Context context, ArrayList<Spanned> messageList) {
+            mInflater = LayoutInflater.from(context);
+            mMessageList = messageList;
+        }
+
+        public int getCount() {
+            return mMessageList.size();
+        }
+
+        public Object getItem(int position) {
+            return position;
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.message, null);
+                holder = new ViewHolder();
+                holder.text = (TextView) convertView.findViewById(R.id.output_message);
+
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            holder.text.setText(mMessageList.get(position));
+
+            return convertView;
+        }
+
+        static class ViewHolder {
+            TextView text;
+        }
+    }
+
+
+    private Context mContext = null;
+    private Handler mHandler = null;
+
+    private ListView mOutputListView = null;
+    private EditText mInputEditText = null;
+    private Button mSendButton = null;
+
+    private ArrayList<Spanned> mOutputArrayAdapter;
 
     SocketConnection mConnection = null;
     IcbClient mClient = null;
@@ -44,12 +104,17 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         setContentView(R.layout.activity_main);
 
-        mWebView = (WebView) findViewById(R.id.output);
-        mInput = (EditText) findViewById(R.id.input);
-        mSubmit = (Button) findViewById(R.id.submit);
-        mHtmlData = new StringBuffer();
+        mOutputArrayAdapter = new ArrayList<Spanned>();
+        mOutputListView = (ListView) findViewById(R.id.output);
+        mOutputListView.setAdapter(new SpannedAdapter(this, mOutputArrayAdapter));
 
-        mSubmit.setOnClickListener(new View.OnClickListener() {
+        mInputEditText = (EditText) findViewById(R.id.input);
+        //mInputEditText.setOnEditorActionListener(mWriteListener);
+
+        mSendButton = (Button) findViewById(R.id.send);
+
+
+        mSendButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (mConnection == null) {
                     doConnect();
@@ -82,7 +147,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     protected void doSubmit() {
-
+        String message = mInputEditText.getText().toString();
+        mOutputArrayAdapter.add(Html.fromHtml(message));
+        mClient.sendCommand(message);
     }
 
     @Override
@@ -93,27 +160,27 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 doPostConnect();
                 break;
             case AppMessages.EVT_LOGIN_OK:
-                mSubmit.setText("Submit");
+                mSendButton.setText("Submit");
                 break;
             case AppMessages.EVT_PROTOCOL:
                 doLogin();
                 break;
             case AppMessages.EVT_STATUS_MSG: {
                 StatusPacket pkt = (StatusPacket) msg.obj;
-                mHtmlData.append("[=" + pkt.getStatusHeader() + "=] " + pkt.getStatusText() + "<br>");
-                mWebView.loadData(mHtmlData.toString(), "text/html", null);
+                String formattedText = "[=" + pkt.getStatusHeader() + "=] " + pkt.getStatusText();
+                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
                 break;
             }
             case AppMessages.EVT_OPEN_MSG: {
                 OpenPacket pkt = (OpenPacket) msg.obj;
-                mHtmlData.append("<" + pkt.getNick() + "> " + pkt.getText() + "<br>");
-                mWebView.loadData(mHtmlData.toString(), "text/html", null);
+                String formattedText = "&lt;" + pkt.getNick() + "&gt; " + pkt.getText();
+                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
                 break;
             }
             case AppMessages.EVT_PERSONAL_MSG: {
                 PersonalPacket pkt = (PersonalPacket) msg.obj;
-                mHtmlData.append("<*" + pkt.getNick() + "*> " + pkt.getText() + "<br>");
-                mWebView.loadData(mHtmlData.toString(), "text/html", null);
+                String formattedText = "&lt;*" + pkt.getNick() + "&gt;* " + pkt.getText();
+                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
                 break;
             }
 

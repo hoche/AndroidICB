@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-    <WebView
+    <ListView
         android:id="@+id/output"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
         android:layout_above="@+id/entry_area"
-        />
+        android:layout_alignParentTop="true"
+        android:stackFromBottom="true"
+        android:transcriptMode="alwaysScroll"  />
 
     <RelativeLayout
         android:id="@+id/entry_area"
@@ -27,7 +27,7 @@
             tools:layout_toLeftOf="@+id/submit" />
 
         <Button
-            android:id="@+id/submit"
+            android:id="@+id/send"
             android:layout_width="80dp"
             android:layout_height="match_parent"
             android:layout_alignParentRight="true"

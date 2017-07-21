@@ -82,21 +82,6 @@ class IcbClient {
         }
     }
 
-    private static byte[] readBuffer(InputStream istream, int len) throws IOException {
-        byte readBuffer[] = new byte[len];
-        int index = 0;
-        int bytesToRead = len;
-        while (bytesToRead > 0) {
-            int amountRead = istream.read(readBuffer, index, bytesToRead);
-            if (amountRead == -1) {
-                throw new RuntimeException("End of stream reached.");
-            }
-            bytesToRead -= amountRead;
-            index += amountRead;
-        }
-        return readBuffer;
-    }
-
     private String removeControlCharacters(String s) {
         StringBuffer buf = new StringBuffer(s.length());
         char c;
@@ -201,31 +186,6 @@ class IcbClient {
 
         } while (remaining.length() > 0);
 
-    }
-
-    public void sendWriteMessage(String nick, String origMsg) {
-        String msg = removeControlCharacters(origMsg);
-
-        String currentMsg;
-        String remaining = msg;
-        int n;
-        do {
-            if (remaining.length() > ICBProtocol.MAX_WRITE_MESSAGE_SIZE) {
-                currentMsg = remaining.substring(0, ICBProtocol.MAX_WRITE_MESSAGE_SIZE);
-                n = currentMsg.lastIndexOf(' ');
-                if (n > 0) {
-                    currentMsg = currentMsg.substring(0, n + 1);
-                }
-                remaining = remaining.substring(currentMsg.length());
-            } else {
-                currentMsg = remaining;
-                remaining = "";
-            }
-
-            StringBuffer buf = new StringBuffer(nick.length() + 15 + currentMsg.length()); // 7 = "server write  "
-            buf.append("server write ").append(nick).append(' ').append(currentMsg);
-            sendCommandMessage("m", buf.toString());
-        } while (remaining.length() > 0);
     }
 
     /**
