@@ -42,40 +42,43 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private static final String LOGTAG = "MainActivity";
 
     // Custom adapter to display Spanned (HTML) data in ListView.
-    private static class SpannedAdapter extends BaseAdapter {
-        private LayoutInflater mInflater;
-        private ArrayList<Spanned> mMessageList;
+    private static class SpannedAdapter extends ArrayAdapter<String>  {
+        private Context mContext;
+        private ArrayList<String> mMessageList;
 
-        public SpannedAdapter(Context context, ArrayList<Spanned> messageList) {
-            mInflater = LayoutInflater.from(context);
+        public SpannedAdapter(Context context, ArrayList<String> messageList) {
+            super(context, R.layout.message, messageList);
+            mContext = context;
             mMessageList = messageList;
         }
 
-        public int getCount() {
-            return mMessageList.size();
-        }
-
-        public Object getItem(int position) {
-            return position;
-        }
-
-        public long getItemId(int position) {
-            return position;
-        }
-
+        // returns the actual view used as a row within the ListView at a
+        // particular position
         public View getView(int position, View convertView, ViewGroup parent) {
-            ViewHolder holder;
-            if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.message, null);
-                holder = new ViewHolder();
-                holder.text = (TextView) convertView.findViewById(R.id.output_message);
+            // Get the data item for this position
+            String message = getItem(position);
 
-                convertView.setTag(holder);
+            // Check if an existing view is being reused, otherwise inflate the view
+            ViewHolder viewHolder; // view lookup cache stored in tag
+
+            final View result;
+
+            if (convertView == null) {
+
+                viewHolder = new ViewHolder();
+                LayoutInflater inflater = LayoutInflater.from(getContext());
+                convertView = inflater.inflate(R.layout.message, parent, false);
+                viewHolder.text = (TextView) convertView.findViewById(R.id.output_message);
+
+                result=convertView;
+
+                convertView.setTag(viewHolder);
             } else {
-                holder = (ViewHolder) convertView.getTag();
+                viewHolder = (ViewHolder) convertView.getTag();
+                result=convertView;
             }
 
-            holder.text.setText(mMessageList.get(position));
+            viewHolder.text.setText(Html.fromHtml(message));
 
             return convertView;
         }
@@ -92,7 +95,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private ListView mOutputListView = null;
     private EditText mInputEditText = null;
 
-    private ArrayList<Spanned> mOutputArrayAdapter;
+    private ArrayList<String> mOutputArrayList;
+    private SpannedAdapter mOutputArrayListAdapter;
 
     SocketConnection mConnection = null;
     IcbClient mClient = null;
@@ -109,9 +113,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         setContentView(R.layout.activity_main);
 
-        mOutputArrayAdapter = new ArrayList<Spanned>();
+        mOutputArrayList = new ArrayList<String>();
         mOutputListView = (ListView) findViewById(R.id.output);
-        mOutputListView.setAdapter(new SpannedAdapter(this, mOutputArrayAdapter));
+        mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
+        mOutputListView.setAdapter(mOutputArrayListAdapter);
 
         mInputEditText = (EditText) findViewById(R.id.input);
         mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -119,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                  // If the action is a key-up event on the return key, send the message
                  if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
                      String message = view.getText().toString();
-                     mOutputArrayAdapter.add(Html.fromHtml(message));
+                     addMessageToOutput(message);
                      if (mClient != null) {
                          mClient.sendCommand(message);
                          mInputEditText.getText().clear();
@@ -147,6 +152,18 @@ public class MainActivity extends AppCompatActivity implements Callback {
         super.onStop();
     }
 
+    @Override
+    public void onDestroy() {
+        try {
+            if (mConnection != null) {
+                mConnection.close();
+            }
+        } catch (IOException e) {
+            LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
+        }
+        super.onDestroy();
+    }
+
     protected void doConnect() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String server = prefs.getString("server_preference", "default.icb.net");
@@ -169,8 +186,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     protected void doSubmit() {
         String message = mInputEditText.getText().toString();
-        mOutputArrayAdapter.add(Html.fromHtml(message));
+        mOutputArrayList.add(message);
         mClient.sendCommand(message);
+    }
+
+    protected void addMessageToOutput(String message) {
+        mOutputArrayList.add(message);
+        mOutputArrayListAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -188,26 +210,26 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 break;
             case AppMessages.EVT_ERROR_MSG: {
                 ErrorPacket pkt = (ErrorPacket) msg.obj;
-                String formattedText = "[*Error*] " + pkt.getErrorText();
-                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
+                String message = "[*Error*] " + pkt.getErrorText();
+                addMessageToOutput(message);
                 break;
             }
             case AppMessages.EVT_STATUS_MSG: {
                 StatusPacket pkt = (StatusPacket) msg.obj;
-                String formattedText = "[=" + pkt.getStatusHeader() + "=] " + pkt.getStatusText();
-                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
+                String message = "[=" + pkt.getStatusHeader() + "=] " + pkt.getStatusText();
+                addMessageToOutput(message);
                 break;
             }
             case AppMessages.EVT_OPEN_MSG: {
                 OpenPacket pkt = (OpenPacket) msg.obj;
-                String formattedText = "&lt;" + pkt.getNick() + "&gt; " + pkt.getText();
-                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
+                String message = "&lt;" + pkt.getNick() + "&gt; " + pkt.getText();
+                addMessageToOutput(message);
                 break;
             }
             case AppMessages.EVT_PERSONAL_MSG: {
                 PersonalPacket pkt = (PersonalPacket) msg.obj;
-                String formattedText = "&lt;*" + pkt.getNick() + "*&gt; " + pkt.getText();
-                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
+                String message = "&lt;*" + pkt.getNick() + "*&gt; " + pkt.getText();
+                addMessageToOutput(message);
                 break;
             }
 

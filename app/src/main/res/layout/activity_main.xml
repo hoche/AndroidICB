@@ -11,6 +11,8 @@
         android:layout_above="@+id/input"
         android:layout_alignParentTop="true"
         android:headerDividersEnabled="false"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="0dp"
         android:stackFromBottom="true"
         android:transcriptMode="alwaysScroll" />
 
