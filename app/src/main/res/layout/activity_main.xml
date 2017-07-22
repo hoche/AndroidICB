@@ -8,31 +8,16 @@
         android:id="@+id/output"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/entry_area"
+        android:layout_above="@+id/input"
         android:layout_alignParentTop="true"
+        android:headerDividersEnabled="false"
         android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll"  />
+        android:transcriptMode="alwaysScroll" />
 
-    <RelativeLayout
-        android:id="@+id/entry_area"
+    <EditText
+        android:id="@+id/input"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_alignParentBottom="true">
-
-        <EditText
-            android:id="@+id/input"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_alignParentLeft="true"
-            tools:layout_toLeftOf="@+id/submit" />
-
-        <Button
-            android:id="@+id/send"
-            android:layout_width="80dp"
-            android:layout_height="match_parent"
-            android:layout_alignParentRight="true"
-            android:text="Login" />
-
-    </RelativeLayout>
+        android:layout_alignParentBottom="true" />
 
 </RelativeLayout>

@@ -118,11 +118,36 @@ public class Utilities {
 		for (int i = offset; i < amountToDump; i++) {
 			sb.append("0x")
 					.append((char) (HEX_CHAR[(buffer[i] & 0x00F0) >> 4]))
-					.append((char) (HEX_CHAR[buffer[i] & 0x000F])).append(" ");
+					.append((char) (HEX_CHAR[buffer[i] & 0x000F]))
+					.append(" ");
 		}
 
 		return sb.toString();
 	}
+
+    public static final String hexdumpAlpha(byte[] buffer, int offset, int amountToDump) {
+        if (buffer == null) {
+            return "";
+        }
+
+        StringBuffer sb = new StringBuffer();
+
+        amountToDump = Math.min(offset + amountToDump, buffer.length);
+
+        for (int i = offset; i < amountToDump; i++) {
+            sb.append("0x")
+                    .append((char) (HEX_CHAR[(buffer[i] & 0x00F0) >> 4]))
+                    .append((char) (HEX_CHAR[buffer[i] & 0x000F]))
+                    .append(" ");
+            if (buffer[i] >= 0x20 & buffer[i] < 0x7F) {
+                sb.append("'" + (char)buffer[i] + "' ");
+            } else {
+                sb.append("'.' ");
+            }
+        }
+
+        return sb.toString();
+    }
 
 	public static int unsignedByte(byte b) {
 		return b & 0xff;

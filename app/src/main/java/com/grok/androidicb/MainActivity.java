@@ -11,9 +11,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
@@ -22,11 +25,13 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.grok.androidicb.protocol.ErrorPacket;
 import com.grok.androidicb.protocol.Packet;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.PersonalPacket;
 import com.grok.androidicb.protocol.StatusPacket;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import static android.text.Html.FROM_HTML_MODE_COMPACT;
@@ -34,6 +39,7 @@ import static android.text.Html.FROM_HTML_MODE_COMPACT;
 
 public class MainActivity extends AppCompatActivity implements Callback {
 
+    private static final String LOGTAG = "MainActivity";
 
     // Custom adapter to display Spanned (HTML) data in ListView.
     private static class SpannedAdapter extends BaseAdapter {
@@ -85,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     private ListView mOutputListView = null;
     private EditText mInputEditText = null;
-    private Button mSendButton = null;
 
     private ArrayList<Spanned> mOutputArrayAdapter;
 
@@ -109,21 +114,37 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mOutputListView.setAdapter(new SpannedAdapter(this, mOutputArrayAdapter));
 
         mInputEditText = (EditText) findViewById(R.id.input);
-        //mInputEditText.setOnEditorActionListener(mWriteListener);
-
-        mSendButton = (Button) findViewById(R.id.send);
-
-
-        mSendButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (mConnection == null) {
-                    doConnect();
-                } else {
-                    doSubmit();
-                }
-            }
+        mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+             public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
+                 // If the action is a key-up event on the return key, send the message
+                 if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
+                     String message = view.getText().toString();
+                     mOutputArrayAdapter.add(Html.fromHtml(message));
+                     if (mClient != null) {
+                         mClient.sendCommand(message);
+                         mInputEditText.getText().clear();
+                     }
+                 }
+                 return true;
+             }
         });
 
+        doConnect();
+    }
+
+    @Override
+    public void onStop() {
+        if (mClient != null) {
+            mClient.stop();
+            try {
+                if (mConnection != null) {
+                    mConnection.close();
+                }
+            } catch (IOException e) {
+                LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
+            }
+        }
+        super.onStop();
     }
 
     protected void doConnect() {
@@ -159,12 +180,18 @@ public class MainActivity extends AppCompatActivity implements Callback {
             case AppMessages.EVT_SOCKET_CONNECTED:
                 doPostConnect();
                 break;
-            case AppMessages.EVT_LOGIN_OK:
-                mSendButton.setText("Submit");
-                break;
             case AppMessages.EVT_PROTOCOL:
                 doLogin();
                 break;
+            case AppMessages.EVT_LOGIN_OK:
+                LogUtil.INSTANCE.d(LOGTAG, "Login OK");
+                break;
+            case AppMessages.EVT_ERROR_MSG: {
+                ErrorPacket pkt = (ErrorPacket) msg.obj;
+                String formattedText = "[*Error*] " + pkt.getErrorText();
+                mOutputArrayAdapter.add(Html.fromHtml(formattedText));
+                break;
+            }
             case AppMessages.EVT_STATUS_MSG: {
                 StatusPacket pkt = (StatusPacket) msg.obj;
                 String formattedText = "[=" + pkt.getStatusHeader() + "=] " + pkt.getStatusText();
@@ -179,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
             }
             case AppMessages.EVT_PERSONAL_MSG: {
                 PersonalPacket pkt = (PersonalPacket) msg.obj;
-                String formattedText = "&lt;*" + pkt.getNick() + "&gt;* " + pkt.getText();
+                String formattedText = "&lt;*" + pkt.getNick() + "*&gt; " + pkt.getText();
                 mOutputArrayAdapter.add(Html.fromHtml(formattedText));
                 break;
             }

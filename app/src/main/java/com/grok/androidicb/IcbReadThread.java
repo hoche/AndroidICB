@@ -3,8 +3,6 @@ package com.grok.androidicb;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.grok.androidicb.Utilities.hexdump;
-
 /**
  *
  * The thread that actually does the reading from the Connection.
@@ -151,7 +149,7 @@ public class IcbReadThread implements Runnable {
 
                     if (mIcbClient != null) {
                         if (verbose) {
-                            LogUtil.INSTANCE.d(LOGTAG, hexdump(pb.mBuffer, 0, pb.mSize));
+                            LogUtil.INSTANCE.d(LOGTAG, Utilities.hexdumpAlpha(pb.mBuffer, 0, pb.mSize));
                         }
                         mIcbClient.dispatch(new String(pb.mBuffer));
                     }

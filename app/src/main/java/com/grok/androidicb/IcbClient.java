@@ -9,11 +9,7 @@ import com.grok.androidicb.protocol.LoginPacket;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.Packet;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.ProtocolException;
-
-import static com.grok.androidicb.Utilities.hexdump;
 
 
 class IcbClient {
@@ -106,6 +102,10 @@ class IcbClient {
     public void sendCommand(String cmd) {
         int cmdLength = cmd.length();
         if (cmd == null || cmdLength == 0) {
+            return;
+        }
+
+        if (mWriteThread == null) {
             return;
         }
 

@@ -112,7 +112,7 @@ public class IcbWriteThread implements Runnable {
                 }
 
                 if (verbose) {
-                    LogUtil.INSTANCE.d(LOGTAG, "Sending message: " + hexdump(msg, 0, msg.length));
+                    LogUtil.INSTANCE.d(LOGTAG, "Sending message: " + Utilities.hexdumpAlpha(msg, 0, msg.length));
                 }
                 if (ostream == null) {
                     if (mStop) {
