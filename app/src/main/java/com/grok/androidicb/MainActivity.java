@@ -1,40 +1,36 @@
 package com.grok.androidicb;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
-import android.text.Spanned;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.webkit.WebView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.grok.androidicb.protocol.ErrorPacket;
-import com.grok.androidicb.protocol.Packet;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.PersonalPacket;
 import com.grok.androidicb.protocol.StatusPacket;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
-import static android.text.Html.FROM_HTML_MODE_COMPACT;
 
 
 public class MainActivity extends AppCompatActivity implements Callback {
@@ -91,12 +87,16 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     private Context mContext = null;
     private Handler mHandler = null;
+    private AlertDialog mDisconnectAlert = null;
 
     private ListView mOutputListView = null;
     private EditText mInputEditText = null;
 
     private ArrayList<String> mOutputArrayList;
     private SpannedAdapter mOutputArrayListAdapter;
+
+    private MenuItem mConnectMenuItem;
+
 
     SocketConnection mConnection = null;
     IcbClient mClient = null;
@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         mHandler = new Handler(this);
 
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.mainactivity);
 
         mOutputArrayList = new ArrayList<String>();
         mOutputListView = (ListView) findViewById(R.id.output);
@@ -134,45 +134,108 @@ public class MainActivity extends AppCompatActivity implements Callback {
              }
         });
 
-        doConnect();
+        buildDisconnectAlert();
+        //doConnect();
     }
 
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.mainmenu, menu);
+        mConnectMenuItem = menu.findItem(R.id.connect);
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.connect:
+                if (mConnection != null) {
+                    // we're connected already. Put up a dialog asking if you want to disconnect.
+                    mDisconnectAlert.show();
+                }
+                return true;
+            case R.id.preferences:
+                //startActivity(new Intent(this, Help.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    // We stay connected through onSuspend, and only disconnect in onStop. That way the app
+    // can be backgrounded and people will stay connected.
     @Override
     public void onStop() {
-        if (mClient != null) {
-            mClient.stop();
-            try {
-                if (mConnection != null) {
-                    mConnection.close();
-                }
-            } catch (IOException e) {
-                LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
-            }
-        }
+        doDisconnect();
         super.onStop();
     }
 
+    // Ordinarily I wouldn't use this but sometimes when you're running in the debugger and you
+    // replace the package, the normal onStop doesn't get called.
     @Override
     public void onDestroy() {
-        try {
-            if (mConnection != null) {
-                mConnection.close();
-            }
-        } catch (IOException e) {
-            LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
-        }
+        doDisconnect();
         super.onDestroy();
     }
 
-    protected void doConnect() {
+    protected synchronized void doConnect() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String server = prefs.getString("server_preference", "default.icb.net");
         int port = Integer.parseInt(prefs.getString("port_preference", "7326"));
         mConnection = new SocketConnection(server, port, mHandler);
+        mConnectMenuItem.setTitle("Disconnect");
     }
 
     protected void doPostConnect() {
         mClient = new IcbClient(mConnection, mHandler);
+    }
+
+    // Check mClient, and call its stop. It'll send a message to the Read/Write threads to die.
+    // We release our reference to it here so when that's all done the gc should destroy it.
+    // The Read/Write threads will maintain a reference to the mConnection while they go through
+    // their stopping routines. Again, we release our reference here and when that's done the
+    // gc should just take care of everything. I hope.
+    protected synchronized void doDisconnect()
+    {
+        if (mClient != null) {
+            mClient.stop();
+        }
+        if (mConnection == null) {
+            return;
+        }
+
+        try {
+            mConnection.close();
+            mConnection = null;
+            mConnectMenuItem.setTitle("Connect");
+            addMessageToOutput("[=Disconnected=]");
+        } catch (IOException e) {
+            LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
+        }
+    }
+
+    protected void buildDisconnectAlert() {
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(mContext);
+        alertBuilder.setMessage("Really disconnect?");
+        alertBuilder.setCancelable(true);
+
+        alertBuilder.setPositiveButton(
+                "Yes",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        doDisconnect();
+                        dialog.cancel();
+                    }
+                });
+
+        alertBuilder.setNegativeButton(
+                "No",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        mDisconnectAlert = alertBuilder.create();
     }
 
     protected void doLogin() {
@@ -182,12 +245,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
         String group = prefs.getString("group_preference","testing");
 
         mClient.sendLogin("AndroidIcb", nick, group, "login", password);
-    }
-
-    protected void doSubmit() {
-        String message = mInputEditText.getText().toString();
-        mOutputArrayList.add(message);
-        mClient.sendCommand(message);
     }
 
     protected void addMessageToOutput(String message) {
