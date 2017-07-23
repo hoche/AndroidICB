@@ -135,13 +135,14 @@ public class MainActivity extends AppCompatActivity implements Callback {
         });
 
         buildDisconnectAlert();
-        //doConnect();
+        doConnect();
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
         mConnectMenuItem = menu.findItem(R.id.connect);
+        updateConnectionMenuItemStatus();
         return true;
     }
 
@@ -150,7 +151,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
             case R.id.connect:
                 if (mConnection != null) {
                     // we're connected already. Put up a dialog asking if you want to disconnect.
+                    // The dialog will handle the actual disconnect if the user confirms.
                     mDisconnectAlert.show();
+                } else {
+                    doConnect();
                 }
                 return true;
             case R.id.preferences:
@@ -182,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
         String server = prefs.getString("server_preference", "default.icb.net");
         int port = Integer.parseInt(prefs.getString("port_preference", "7326"));
         mConnection = new SocketConnection(server, port, mHandler);
-        mConnectMenuItem.setTitle("Disconnect");
+        updateConnectionMenuItemStatus();
     }
 
     protected void doPostConnect() {
@@ -196,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     // gc should just take care of everything. I hope.
     protected synchronized void doDisconnect()
     {
+        LogUtil.INSTANCE.d(LOGTAG, "doDisconnect()");
         if (mClient != null) {
             mClient.stop();
         }
@@ -206,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
         try {
             mConnection.close();
             mConnection = null;
-            mConnectMenuItem.setTitle("Connect");
+            updateConnectionMenuItemStatus();
             addMessageToOutput("[=Disconnected=]");
         } catch (IOException e) {
             LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
@@ -214,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     protected void buildDisconnectAlert() {
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(mContext);
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
         alertBuilder.setMessage("Really disconnect?");
         alertBuilder.setCancelable(true);
 
@@ -236,6 +241,19 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 });
 
         mDisconnectAlert = alertBuilder.create();
+    }
+
+    protected synchronized void updateConnectionMenuItemStatus()
+    {
+        if (mConnectMenuItem == null) {
+            // menu hasn't been created yet
+            return;
+        }
+        if (mConnection != null) {
+            mConnectMenuItem.setTitle("Disconnect");
+        } else {
+            mConnectMenuItem.setTitle("Connect");
+        }
     }
 
     protected void doLogin() {
