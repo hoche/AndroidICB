@@ -2,7 +2,10 @@ package com.grok.androidicb;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
@@ -23,6 +26,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.grok.androidicb.protocol.ErrorPacket;
 import com.grok.androidicb.protocol.OpenPacket;
@@ -31,6 +35,7 @@ import com.grok.androidicb.protocol.StatusPacket;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 
 public class MainActivity extends AppCompatActivity implements Callback {
@@ -111,30 +116,31 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         mHandler = new Handler(this);
 
-        setContentView(R.layout.mainactivity);
 
         mOutputArrayList = new ArrayList<String>();
-        mOutputListView = (ListView) findViewById(R.id.output);
         mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
-        mOutputListView.setAdapter(mOutputArrayListAdapter);
 
-        mInputEditText = (EditText) findViewById(R.id.input);
-        mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-             public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-                 // If the action is a key-up event on the return key, send the message
-                 if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
-                     String message = view.getText().toString();
-                     addMessageToOutput(message);
-                     if (mClient != null) {
-                         mClient.sendCommand(message);
-                         mInputEditText.getText().clear();
-                     }
-                 }
-                 return true;
-             }
-        });
+        setupLayout();
+
+        /*
+        new PatternEditableBuilder().
+            addPattern(Pattern.compile("&lt;(\\w+)&gt;"), Color.BLUE,
+                new PatternEditableBuilder.SpannableClickedListener() {
+
+                    @Override
+                    public void onSpanClicked(String text) {
+                        Toast.makeText(MainActivity.this, "Clicked nickname: " + text,
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                }).into(mInputEditText);
+        */
 
         buildDisconnectAlert();
+
+        // Ok, now we need to check the preferences. If "autoconnect on launch" is created,
+        // AND the host, port, username, password, and group are set, just quietly connect.
+        // If the username, password, or group aren't set, pop up a "set me" dialog.
         doConnect();
     }
 
@@ -158,18 +164,34 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 }
                 return true;
             case R.id.preferences:
-                //startActivity(new Intent(this, Help.class));
+                startActivity(new Intent(this, PrefActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    // We stay connected through onSuspend, and only disconnect in onStop. That way the app
-    // can be backgrounded and people will stay connected.
+    @Override
+    public void onStart() {
+        LogUtil.INSTANCE.d(LOGTAG, "onStart()");
+        super.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        LogUtil.INSTANCE.d(LOGTAG, "onResume()");
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        LogUtil.INSTANCE.d(LOGTAG, "onPause()");
+        super.onPause();
+    }
+
     @Override
     public void onStop() {
-        doDisconnect();
+        LogUtil.INSTANCE.d(LOGTAG, "onStop()");
         super.onStop();
     }
 
@@ -177,8 +199,48 @@ public class MainActivity extends AppCompatActivity implements Callback {
     // replace the package, the normal onStop doesn't get called.
     @Override
     public void onDestroy() {
+        LogUtil.INSTANCE.d(LOGTAG, "onDestroy()");
         doDisconnect();
         super.onDestroy();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig)
+    {
+        super.onConfigurationChanged(newConfig);
+        setupLayout();
+    }
+
+    protected void setupLayout()
+    {
+        LogUtil.INSTANCE.d(LOGTAG, "setUpScreen()");
+        setContentView(R.layout.mainactivity);
+        mOutputListView = (ListView) findViewById(R.id.output);
+        mOutputListView.setAdapter(mOutputArrayListAdapter);
+
+        String savedText = null;
+        if (mInputEditText != null) {
+            savedText = mInputEditText.getText().toString();
+        }
+        mInputEditText = (EditText) findViewById(R.id.input);
+        if (savedText != null && savedText.length() > 0) {
+            mInputEditText.setText(savedText);
+            mInputEditText.setSelection(savedText.length());
+        }
+        mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
+                // If the action is a key-up event on the return key, send the message
+                if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
+                    String message = view.getText().toString();
+                    addMessageToOutput(message);
+                    if (mClient != null) {
+                        mClient.sendCommand(message);
+                        mInputEditText.getText().clear();
+                    }
+                }
+                return true;
+            }
+        });
     }
 
     protected synchronized void doConnect() {

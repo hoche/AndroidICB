@@ -11,11 +11,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
         <activity android:name=".MainActivity"
-            android:launchMode="singleTask" >
+            android:configChanges="orientation|screenSize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".PrefActivity" android:label="@string/pref_title">
+            <intent-filer>
+                <action android:name=".Preferences" />
+                <category android:name="android.intent.category.PREFERENCE" />
+            </intent-filer>
         </activity>
     </application>
 
