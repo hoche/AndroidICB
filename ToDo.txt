@@ -1,0 +1,41 @@
+7/22/17
+
+* Figure out how to make the one-instance-only thing work
+* When the "U-Turn" button is pressed, we get the following:
+
+    07-23 18:52:42.044 25381-25381/com.grok.androidicb D/MainActivity: 1500861162054 TID:1 MainActivity onPause()
+    07-23 18:52:42.254 25381-25381/com.grok.androidicb W/IInputConnectionWrapper: showStatusIcon on inactive InputConnection
+    07-23 18:52:42.815 25381-25381/com.grok.androidicb D/MainActivity: 1500861162823 TID:1 MainActivity onStop()
+    07-23 18:52:42.815 25381-25381/com.grok.androidicb D/MainActivity: 1500861162824 TID:1 MainActivity onDestroy()
+    07-23 18:52:42.815 25381-25381/com.grok.androidicb D/MainActivity: 1500861162824 TID:1 MainActivity doDisconnect()
+    07-23 18:52:42.815 25381-25381/com.grok.androidicb D/AbsListView: onDetachedFromWindow
+    07-23 18:52:42.815 25381-28967/com.grok.androidicb D/IcbReadThread: 1500861162825 TID:2815 IcbReadThread run(): getInputStream() IOException: Socket closed
+    07-23 18:52:42.815 25381-28967/com.grok.androidicb D/IcbReadThread: 1500861162826 TID:2815 IcbReadThread Read thread stopping..
+    07-23 18:52:42.815 25381-28967/com.grok.androidicb D/IcbClient: 1500861162826 TID:2815 IcbClient onReadThreadExit
+    07-23 18:52:42.815 25381-28968/com.grok.androidicb D/IcbWriteThread: 1500861162828 TID:2816 IcbWriteThread Write thread stopping..
+    07-23 18:52:42.815 25381-28968/com.grok.androidicb D/IcbClient: 1500861162829 TID:2816 IcbClient onWriteThreadExit
+    07-23 18:52:42.815 25381-28968/com.grok.androidicb D/IcbClient: 1500861162829 TID:2816 IcbClient Sending stop message to main app
+    07-23 18:52:42.945 25381-28962/com.grok.androidicb D/SocketConnection: 1500861162954 TID:2814 SocketConnection SocketConnection() Socket not connected.
+    07-23 18:52:43.005 25381-28962/com.grok.androidicb D/SocketConnection: 1500861163019 TID:2814 SocketConnection Got a connection to default.icb.net:7326
+    07-23 18:52:43.005 25381-28962/com.grok.androidicb D/SocketConnection: 1500861163020 TID:2814 SocketConnection mInputStream: java.net.PlainSocketImpl$PlainSocketInputStream@420d0538   mOutputStream: java.net.PlainSocketImpl$PlainSocketOutputStream@420d0548
+    07-23 18:52:43.005 25381-28962/com.grok.androidicb D/SocketConnection: 1500861163020 TID:2814 SocketConnection EVT_SOCKET_CONNECTED
+    07-23 18:52:43.005 25381-25381/com.grok.androidicb D/IcbClient: 1500861163020 TID:1 IcbClient Starting IcbClient. Launching threads
+    07-23 18:52:43.005 25381-25381/com.grok.androidicb D/IcbReadThread: 1500861163020 TID:1 IcbReadThread initializing
+    07-23 18:52:43.005 25381-25381/com.grok.androidicb D/IcbWriteThread: 1500861163020 TID:1 IcbWriteThread initializing
+    07-23 18:52:43.015 25381-3360/com.grok.androidicb D/IcbReadThread: 1500861163024 TID:2817 IcbReadThread running
+    07-23 18:52:43.015 25381-3360/com.grok.androidicb D/IcbReadThread: 1500861163025 TID:2817 IcbReadThread run(): No Connection set.
+    07-23 18:52:43.015 25381-3360/com.grok.androidicb D/IcbClient: 1500861163026 TID:2817 IcbClient onReadThreadExit
+    07-23 18:52:43.015 25381-3361/com.grok.androidicb D/IcbWriteThread: 1500861163027 TID:2818 IcbWriteThread running
+    07-23 18:52:43.015 25381-3361/com.grok.androidicb D/IcbWriteThread: 1500861163028 TID:2818 IcbWriteThread No Connection set.
+    07-23 18:52:43.025 25381-3361/com.grok.androidicb D/IcbClient: 1500861163028 TID:2818 IcbClient onReadThreadExit
+
+    Looks like the app is getting destroyed and then immediately tries to restart the connection. The server never disconnects
+    the client (at least not until the TCP timeout hits).
+
+* Check username/password/group on startup and if they're not set, set them
+* Allow group changing - if you change it in the preferences, switch groups when you return to the chat.
+* Allow /w from menu
+* Figure out how to do text selecting within the edittext.
+     See https://guides.codepath.com/android/Working-with-the-TextView#inserting-html-formatting
+     https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124#file-readme-md
+* Handle other packets - Beep/Ping/Pong
