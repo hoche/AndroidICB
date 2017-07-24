@@ -205,6 +205,15 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     @Override
+    public void onBackPressed() {
+        LogUtil.INSTANCE.d(LOGTAG, "onBackPressed()");
+        // If we're disconnected, allow the back button to kill us.
+        if (mClient == null) {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
     public void onConfigurationChanged(Configuration newConfig)
     {
         super.onConfigurationChanged(newConfig);
