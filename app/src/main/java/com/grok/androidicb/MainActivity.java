@@ -109,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     IcbClient mClient = null;
 
+    static final int PREFS_SET_BEFORE_CONNECT = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -116,8 +118,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mContext = getApplicationContext();
         LogUtil.INSTANCE.SetLogFile("log.txt", mContext);
 
-        mHandler = new Handler(this);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
+        mHandler = new Handler(this);
 
         mOutputArrayList = new ArrayList<String>();
         mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
@@ -140,10 +143,12 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         buildDisconnectAlert();
 
-        // Ok, now we need to check the preferences. If "autoconnect on launch" is created,
-        // AND the host, port, username, password, and group are set, just quietly connect.
-        // If the username, password, or group aren't set, pop up a "set me" dialog.
-        doConnect();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        boolean autologin = prefs.getBoolean("autologin", true);
+        String nick = prefs.getString("nick", "");
+        if (autologin && nick.length() > 0) {
+            new ConnectTask().execute();
+        }
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -260,9 +265,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
         @Override
         protected void onPreExecute() {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-            mServer = prefs.getString("server_preference", "default.icb.net");
-            mPort = Integer.parseInt(prefs.getString("port_preference", "7326"));
-            Toast toast =  Toast.makeText(getApplicationContext(), "Connecting to " + mServer + ":" + mPort, Toast.LENGTH_LONG);
+            mServer = prefs.getString("server", getString(R.string.default_server));
+            mPort = Integer.parseInt(prefs.getString("port", getString(R.string.default_port)));
+            String nick = prefs.getString("nick", "UNSET");
+            String group = prefs.getString("group", getString(R.string.default_group));
+            Toast toast =  Toast.makeText(getApplicationContext(),
+                    "Connecting as nick " + nick + " to " + mServer + ":" + mPort + ", group " + group,
+                    Toast.LENGTH_LONG);
             toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
             toast.show();
         }
@@ -299,8 +308,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
         @Override
         protected void onPostExecute(Integer result) {
             if (result == 0) {
-                updateConnectionMenuItemStatus();
                 mClient = new IcbClient(mSocket, mHandler);
+                updateConnectionMenuItemStatus();
             } else {
                 Toast toast =  Toast.makeText(getApplicationContext(), "Couldn't connect to " + mServer + ":" + mPort, Toast.LENGTH_LONG);
                 toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
@@ -309,8 +318,29 @@ public class MainActivity extends AppCompatActivity implements Callback {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        LogUtil.INSTANCE.d(LOGTAG, "onActivityResult()");
+        if (requestCode == PREFS_SET_BEFORE_CONNECT) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+            String nick = prefs.getString("nick", "");
+            if (nick.length() > 0) {
+                new ConnectTask().execute();
+            }
+        }
+    }
 
     protected void doConnect() {
+        LogUtil.INSTANCE.d(LOGTAG, "doConnect()");
+        // Check the prefs. If we don't have "nick" set, launch the prefs activity. That will
+        // come back to onActivityResult, and if it's ok, we'll do the connect there.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        String nick = prefs.getString("nick", "");
+        if (nick.length() == 0) {
+            startActivityForResult(new Intent(this, PrefActivity.class), PREFS_SET_BEFORE_CONNECT);
+            return;
+        }
+
         new ConnectTask().execute();
     }
 
@@ -375,9 +405,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
             return;
         }
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String nick = prefs.getString("nick_preference", "andybee");
-        String password = prefs.getString("password_preference", "");
-        String group = prefs.getString("group_preference","testing");
+        String nick = prefs.getString("nick", "");
+        String group = prefs.getString("group","");
+        String password = prefs.getString("password", "");
         mClient.sendLogin("AndroidIcb", nick, group, "login", password);
     }
 

@@ -3,4 +3,5 @@
     <string name="pref_title">Preferences</string>
     <string name="default_server">default.icb.net</string>
     <string name="default_port">7326</string>
+    <string name="default_group">1</string>
 </resources>

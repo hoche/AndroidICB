@@ -3,11 +3,15 @@ package com.grok.androidicb;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.widget.EditText;
+import android.widget.Toast;
 
 
 /**
@@ -19,12 +23,22 @@ public class PrefActivity extends PreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        PrefFragment prefFragment = new PrefFragment();
         FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(android.R.id.content, prefFragment);
+        fragmentTransaction.replace(android.R.id.content, new PrefFragment());
         fragmentTransaction.commit();
     }
 
+    @Override
+    public void onBackPressed() {
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        String nick = sharedPrefs.getString("nick", "");
+        if (nick.length() == 0) {
+            Toast toast =  Toast.makeText(getApplicationContext(), "Warning: Can't connect without Nickname.", Toast.LENGTH_SHORT);
+            toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
+            toast.show();
+        }
+        super.onBackPressed();
+    }
 
 }
