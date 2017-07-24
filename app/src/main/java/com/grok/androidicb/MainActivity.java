@@ -284,6 +284,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 InetSocketAddress sockaddr = new InetSocketAddress(mServer, mPort);
                 mSocket = new Socket();
                 mSocket.connect(sockaddr, 5000);
+                mSocket.setKeepAlive(true);
+                mSocket.setSoTimeout(Integer.MAX_VALUE);
             } catch (java.net.UnknownHostException e) {
                 LogUtil.INSTANCE.d(LOGTAG, "Socket() UnknownHostException: " + e.getMessage());
                 return -1;
