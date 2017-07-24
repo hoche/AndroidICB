@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
@@ -14,6 +15,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,6 +36,9 @@ import com.grok.androidicb.protocol.PersonalPacket;
 import com.grok.androidicb.protocol.StatusPacket;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -102,10 +107,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     private MenuItem mConnectMenuItem;
 
-
-    SocketConnection mConnection = null;
     IcbClient mClient = null;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,9 +157,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.connect:
-                if (mConnection != null) {
-                    // we're connected already. Put up a dialog asking if you want to disconnect.
-                    // The dialog will handle the actual disconnect if the user confirms.
+                if (mClient != null) {
                     mDisconnectAlert.show();
                 } else {
                     doConnect();
@@ -243,17 +243,66 @@ public class MainActivity extends AppCompatActivity implements Callback {
         });
     }
 
-    protected synchronized void doConnect() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String server = prefs.getString("server_preference", "default.icb.net");
-        int port = Integer.parseInt(prefs.getString("port_preference", "7326"));
-        mConnection = new SocketConnection(server, port, mHandler);
-        updateConnectionMenuItemStatus();
+    private class ConnectTask extends AsyncTask<Void, Void, Integer> {
+        private Socket mSocket = null;
+        private String mServer = null;
+        private int mPort;
+
+        @Override
+        protected void onPreExecute() {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+            mServer = prefs.getString("server_preference", "default.icb.net");
+            mPort = Integer.parseInt(prefs.getString("port_preference", "7326"));
+            Toast toast =  Toast.makeText(getApplicationContext(), "Connecting to " + mServer + ":" + mPort, Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
+            toast.show();
+        }
+
+        @Override
+        protected Integer doInBackground(Void...params) {
+            InetAddress serverAddr = null;
+            try {
+                // The host name can either be a machine name, such as "java.sun.com", or a textual representation of its IP address
+                serverAddr = InetAddress.getByName(mServer);
+            } catch (Exception e) {
+                LogUtil.INSTANCE.e(LOGTAG, "Couldn't get IP address for " + mServer, e);
+                return -1;
+            }
+
+            LogUtil.INSTANCE.d(LOGTAG, "run() Connecting to " + serverAddr.toString() + "(" + mServer + ") port " + mPort);
+
+            try {
+                InetSocketAddress sockaddr = new InetSocketAddress(mServer, mPort);
+                mSocket = new Socket();
+                mSocket.connect(sockaddr, 5000);
+            } catch (java.net.UnknownHostException e) {
+                LogUtil.INSTANCE.d(LOGTAG, "Socket() UnknownHostException: " + e.getMessage());
+                return -1;
+            } catch (IOException e) {
+                LogUtil.INSTANCE.d(LOGTAG, "Socket() IOException: " + e.getMessage());
+                return -1;
+            }
+            return 0;
+        }
+
+        @Override
+        protected void onPostExecute(Integer result) {
+            if (result == 0) {
+                updateConnectionMenuItemStatus();
+                mClient = new IcbClient(mSocket, mHandler);
+            } else {
+                Toast toast =  Toast.makeText(getApplicationContext(), "Couldn't connect to " + mServer + ":" + mPort, Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
+                toast.show();
+            }
+        }
     }
 
-    protected void doPostConnect() {
-        mClient = new IcbClient(mConnection, mHandler);
+
+    protected void doConnect() {
+        new ConnectTask().execute();
     }
+
 
     // Check mClient, and call its stop. It'll send a message to the Read/Write threads to die.
     // We release our reference to it here so when that's all done the gc should destroy it.
@@ -263,21 +312,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
     protected synchronized void doDisconnect()
     {
         LogUtil.INSTANCE.d(LOGTAG, "doDisconnect()");
-        if (mClient != null) {
-            mClient.stop();
-        }
-        if (mConnection == null) {
+        if (mClient == null) {
             return;
         }
 
-        try {
-            mConnection.close();
-            mConnection = null;
-            updateConnectionMenuItemStatus();
-            addMessageToOutput("[=Disconnected=]");
-        } catch (IOException e) {
-            LogUtil.INSTANCE.e(LOGTAG, "Exception closing mConnection", e);
-        }
+        mClient.stop();
+        updateConnectionMenuItemStatus();
+        addMessageToOutput("[=Disconnected=]");
     }
 
     protected void buildDisconnectAlert() {
@@ -311,7 +352,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
             // menu hasn't been created yet
             return;
         }
-        if (mConnection != null) {
+        if (mClient != null) {
             mConnectMenuItem.setTitle("Disconnect");
         } else {
             mConnectMenuItem.setTitle("Connect");
@@ -319,11 +360,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     protected void doLogin() {
+        if (mClient == null) {
+            return;
+        }
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String nick = prefs.getString("nick_preference", "andybee");
         String password = prefs.getString("password_preference", "");
         String group = prefs.getString("group_preference","testing");
-
         mClient.sendLogin("AndroidIcb", nick, group, "login", password);
     }
 
@@ -334,10 +377,12 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     @Override
     public boolean handleMessage(Message msg) {
-        //LogUtil.INSTANCE.d(LOGTAG, "handleMessage()");
         switch (msg.what) {
-            case AppMessages.EVT_SOCKET_CONNECTED:
-                doPostConnect();
+            case AppMessages.EVT_SOCKET_STOPPED:
+                LogUtil.INSTANCE.d(LOGTAG, "Got EVT_SOCKET_STOPPED");
+                mClient = null;
+                updateConnectionMenuItemStatus();
+                addMessageToOutput("[=Disconnected=]");
                 break;
             case AppMessages.EVT_PROTOCOL:
                 doLogin();

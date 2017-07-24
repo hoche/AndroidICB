@@ -1,6 +1,8 @@
 7/22/17
 
 * Figure out how to make the one-instance-only thing work
+* Get rid of the SocketConnection class. Make the socket an AsyncTask in the MainActivity. If IOException is thrown,
+  send a toast back to the main app.
 * When the "U-Turn" button is pressed, we get the following:
 
     07-23 18:52:42.044 25381-25381/com.grok.androidicb D/MainActivity: 1500861162054 TID:1 MainActivity onPause()

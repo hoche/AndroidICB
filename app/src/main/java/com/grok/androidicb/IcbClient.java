@@ -9,46 +9,61 @@ import com.grok.androidicb.protocol.LoginPacket;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.Packet;
 
+import java.io.IOException;
 import java.net.ProtocolException;
+import java.net.Socket;
 
 
 class IcbClient {
 
     private static final String LOGTAG = "IcbClient";
 
+    Socket mSocket;
     Handler mAppHandler;
     IcbReadThread mReadThread;
     IcbWriteThread mWriteThread;
 
     private static final Boolean verbose = false;
 
-    public IcbClient(SocketConnection connection, Handler handler) {
+    public IcbClient(Socket socket, Handler handler) {
+        mSocket = socket;
         mAppHandler = handler;
 
         LogUtil.INSTANCE.d(LOGTAG, "Starting IcbClient. Launching threads");
 
-        mReadThread = new IcbReadThread(this, connection);
-        mWriteThread = new IcbWriteThread(this, connection);
+        mReadThread = new IcbReadThread(this, socket);
+        mWriteThread = new IcbWriteThread(this, socket);
 
         try {
             new Thread(mReadThread, "IcbReadThread").start();
         } catch (Exception e) {
-            LogUtil.INSTANCE.d(LOGTAG, "Couldn't start mReadThread. Unknown Exception error " + e.getMessage() + "\n" + e.getMessage());
+            LogUtil.INSTANCE.e(LOGTAG, "Couldn't start ReadThread. Unknown Exception error ", e);
         }
         try {
             new Thread(mWriteThread, "IcbWriteThread").start();
         } catch (Exception e) {
-            LogUtil.INSTANCE.d(LOGTAG, "Couldn't start mWriteThread. Unknown Exception error " + e.getMessage() + "\n" + e.getMessage());
+            LogUtil.INSTANCE.e(LOGTAG, "Couldn't start WriteThread. Unknown Exception error ", e);
         }
     }
 
     public void stop()
     {
+        // This just sets the stop flag in each. The socket will remain open. Notify them first
+        // in case they're in the middle of handling something and want to complete it.
         if (mReadThread != null) {
             mReadThread.notifyStop();
         }
         if (mWriteThread != null) {
             mWriteThread.notifyStop();
+        }
+
+        // Now close the socket. This may cause the threads to throw an Exception if they're
+        // blocked on a read/write. That's ok.
+        try {
+            mSocket.close();
+            mSocket = null;
+        } catch (IOException e) {
+            LogUtil.INSTANCE.e(LOGTAG, "Exception closing socket", e);
         }
     }
 

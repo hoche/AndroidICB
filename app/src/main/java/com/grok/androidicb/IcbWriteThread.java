@@ -2,6 +2,7 @@ package com.grok.androidicb;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import static com.grok.androidicb.Utilities.hexdump;
@@ -21,17 +22,17 @@ public class IcbWriteThread implements Runnable {
     private static final String LOGTAG = "IcbWriteThread";
     private static final Boolean verbose = true;
 
-    private IcbClient mProtocolDispatcher;
-    private SocketConnection mConnection;
+    private IcbClient mIcbClient = null;
+    private Socket mSocket = null;
 
     private Boolean mStop = false;
 
     private ArrayList<byte[]> mPacketList = null;
 
-    public IcbWriteThread(IcbClient pd, SocketConnection connection) {
+    public IcbWriteThread(IcbClient client, Socket socket) {
         LogUtil.INSTANCE.d(LOGTAG, "initializing");
-        mProtocolDispatcher = pd;
-        mConnection = connection;
+        mIcbClient = client;
+        mSocket = socket;
         mPacketList = new ArrayList<>();
     }
 
@@ -69,33 +70,25 @@ public class IcbWriteThread implements Runnable {
     public void run() {
         LogUtil.INSTANCE.d(LOGTAG, "running");
 
-        if (mConnection == null) {
-            LogUtil.INSTANCE.d(LOGTAG, "No Connection set.");
-            if (mProtocolDispatcher != null) {
-                mProtocolDispatcher.onReadThreadExit(0);
+        if (mSocket == null || mIcbClient == null) {
+            LogUtil.INSTANCE.d(LOGTAG, "No socket or client.");
+            if (mIcbClient != null) {
+                mIcbClient.onWriteThreadExit(0);
             }
             return;
         }
 
-        int ret = 0;
+        OutputStream ostream = null;
+        try {
+            ostream = mSocket.getOutputStream();
+        } catch (IOException e) {
+            LogUtil.INSTANCE.d(LOGTAG, "write() IOException: " + e.getMessage());
+            mIcbClient.onWriteThreadExit(0);
+            return;
+        }
 
         while (!mStop) {
-
             try {
-                OutputStream ostream = mConnection.getOutputStream();
-                if (ostream == null) {
-                    LogUtil.INSTANCE.d(LOGTAG, "No Connection or OutputStream. Sleeping.");
-                    if (mStop) {
-                        continue;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                    }
-                    continue;
-                }
-
                 byte[] msg = getNextMessage();
 
                 if (msg == null) {
@@ -104,7 +97,7 @@ public class IcbWriteThread implements Runnable {
                         continue;
                     }
                     try {
-                        Thread.sleep(20); // milliseconds
+                        Thread.sleep(100); // milliseconds
                     } catch (InterruptedException e) {
                         // do nothing
                     }
@@ -114,46 +107,17 @@ public class IcbWriteThread implements Runnable {
                 if (verbose) {
                     LogUtil.INSTANCE.d(LOGTAG, "Sending message: " + Utilities.hexdumpAlpha(msg, 0, msg.length));
                 }
-                if (ostream == null) {
-                    if (mStop) {
-                        continue;
-                    }
-                    LogUtil.INSTANCE.d(LOGTAG, "No Connection or OutputStream. Sleeping.");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                    }
-                    continue;
-                }
-
-                if (mStop) {
-                    continue;
-                }
-                LogUtil.INSTANCE.d(LOGTAG, "ostream.write()");
                 ostream.write(msg); // blocks until write complete.
                 LogUtil.INSTANCE.d(LOGTAG, "ostream.write() complete");
 
             } catch (IOException e) {
                 LogUtil.INSTANCE.d(LOGTAG, "write() IOException: " + e.getMessage());
-                mConnection.notifyWriteFailed();
-
-                if (mStop) {
-                    continue;
-                }
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException eInterrupted) {
-                    LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                }
+                mStop = true;
             }
         }
 
         LogUtil.INSTANCE.d(LOGTAG, "Write thread stopping..");
-        if (mProtocolDispatcher != null) {
-            mProtocolDispatcher.onWriteThreadExit(0);
-        }
+        mIcbClient.onWriteThreadExit(0);
     }
 
     public void notifyStop()

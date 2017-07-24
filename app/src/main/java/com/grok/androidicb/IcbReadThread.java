@@ -2,6 +2,7 @@ package com.grok.androidicb;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 
 /**
  *
@@ -17,7 +18,7 @@ public class IcbReadThread implements Runnable {
     private static final Boolean verbose = true;
 
     private IcbClient mIcbClient = null;
-    private SocketConnection mConnection = null;
+    private Socket mSocket = null;
 
     private Boolean mStop = false;
 
@@ -33,75 +34,48 @@ public class IcbReadThread implements Runnable {
         }
     }
 
-    public IcbReadThread(IcbClient pd, SocketConnection connection) {
+    public IcbReadThread(IcbClient client, Socket socket) {
 
         LogUtil.INSTANCE.d(LOGTAG, "initializing");
-        mIcbClient = pd;
-        mConnection = connection;
+        mIcbClient = client;
+        mSocket = socket;
     }
 
     public void run() {
         LogUtil.INSTANCE.d(LOGTAG, "running");
 
-        if (mConnection == null) {
-            LogUtil.INSTANCE.d(LOGTAG, "run(): No Connection set.");
+        if (mSocket == null || mIcbClient == null) {
+            LogUtil.INSTANCE.d(LOGTAG, "run(): No socket or client.");
             if (mIcbClient != null) {
                 mIcbClient.onReadThreadExit(0);
             }
             return;
         }
 
-        int ret = 0;
+        InputStream istream = null;
+        try {
+            istream = mSocket.getInputStream();
+        } catch (IOException e) {
+            LogUtil.INSTANCE.d(LOGTAG, "run() IOException: " + e.getMessage());
+            mIcbClient.onReadThreadExit(0);
+            return;
+        }
 
         IcbPacketBuffer pb = null;
 
         while (!mStop) {
             try {
-                // Make sure we have a valid input stream. Otherwise, ditch everything and start
-                // over. Eventually the mConnection should reestablish (or just give up and kill
-                // everything).
-                InputStream istream = mConnection.getInputStream();
-                if (istream == null) {
-                    if (mStop) {
-                        continue;
-                    }
-                    LogUtil.INSTANCE.d(LOGTAG, "run(): No Connection or InputStream. Sleeping.");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                    }
-
-                    if (mStop) {
-                        continue;
-                    }
-
-                    pb = null;
-                    continue;
-                }
-
-                // Note: java's istream.read() does not block. ret will have a short value if
-                // it couldn't read the requested bytes, or -1 if the stream was closed.
                 if (pb == null) {
                     // need the length byte
                     if (verbose) {
                         LogUtil.INSTANCE.d(LOGTAG, "run(): Trying to read length byte");
                     }
-                    int packetSize = istream.read(); // reads one byte and casts it as an int in the range 0 - 255 (so no unsigned conversion is necessary)
-                    if (ret == -1) {
+                    // read one byte. This automatically casts it as an int in the range 0 - 255 so
+                    // no unsigned conversion is necessary. Blocks.
+                    int packetSize = istream.read();
+                    if (packetSize == -1) {
                         LogUtil.INSTANCE.d(LOGTAG, "run(): Got EOF.");
-                        mConnection.notifyReadFailed();
-
-                        if (mStop) {
-                            continue;
-                        }
-
-                        try {
-                            Thread.sleep(100);  // wait 100mS (this can be made shorter)
-                        } catch (InterruptedException e) {
-                            LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                        }
-
+                        mStop = true;
                         continue;
                     }
 
@@ -109,33 +83,22 @@ public class IcbReadThread implements Runnable {
                         LogUtil.INSTANCE.d(LOGTAG, "run(): Got packet length of " + packetSize);
                     }
                     pb = new IcbPacketBuffer(packetSize);
-
                 }
 
                 if (verbose) {
                     LogUtil.INSTANCE.d(LOGTAG, "run(): Trying to read " + (pb.mSize - pb.mOffset) + " bytes into offset " +  pb.mOffset);
                 }
-                ret = istream.read(pb.mBuffer, pb.mOffset, pb.mSize - pb.mOffset);
-                if (ret == -1) {
+                // blocks.
+                int bytesRead = istream.read(pb.mBuffer, pb.mOffset, pb.mSize - pb.mOffset);
+                if (bytesRead == -1) {
                     LogUtil.INSTANCE.d(LOGTAG, "run(): Got EOF.");
-                    mConnection.notifyReadFailed();
-
-                    if (mStop) {
-                        continue;
-                    }
-
-                    try {
-                        Thread.sleep(100);  // wait 100mS (this can be made shorter)
-                    } catch (InterruptedException e) {
-                        LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                    }
-
+                    mStop = true;
                     continue;
                 }
 
-                pb.mOffset += ret;
+                pb.mOffset += bytesRead;
                 if (verbose) {
-                    LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + ret + " bytes. Moving offset to " + pb.mOffset);
+                    LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + bytesRead + " bytes. Moving offset to " + pb.mOffset);
                 }
 
                 if (pb.mOffset == pb.mSize) {
@@ -143,40 +106,21 @@ public class IcbReadThread implements Runnable {
                         LogUtil.INSTANCE.d(LOGTAG, "run(): Got " + pb.mSize + " bytes. Parsing buffer and resetting offset to 0.");
                     }
 
-                    if (mStop) {
-                        continue;
+                    if (verbose) {
+                        LogUtil.INSTANCE.d(LOGTAG, Utilities.hexdumpAlpha(pb.mBuffer, 0, pb.mSize));
                     }
-
-                    if (mIcbClient != null) {
-                        if (verbose) {
-                            LogUtil.INSTANCE.d(LOGTAG, Utilities.hexdumpAlpha(pb.mBuffer, 0, pb.mSize));
-                        }
-                        mIcbClient.dispatch(new String(pb.mBuffer));
-                    }
+                    mIcbClient.dispatch(new String(pb.mBuffer));
                     pb = null;
                 }
 
             } catch (IOException e) {
-                // We may get this we get disconnected
                 LogUtil.INSTANCE.d(LOGTAG, "run(): getInputStream() IOException: " + e.getMessage());
-                mConnection.notifyReadFailed();
-
-                if (mStop) {
-                    continue;
-                }
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException eInterrupted) {
-                    LogUtil.INSTANCE.d(LOGTAG, "run(): sleep interrupted");
-                }
+                mStop = true;
             }
         }
 
         LogUtil.INSTANCE.d(LOGTAG, "Read thread stopping..");
-        if (mIcbClient != null) {
-            mIcbClient.onReadThreadExit(0);
-        }
+        mIcbClient.onReadThreadExit(0);
     }
 
     public void notifyStop()
