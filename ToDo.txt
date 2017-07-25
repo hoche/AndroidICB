@@ -1,8 +1,5 @@
-7/23/17
+7/24/17
 
-* Check username/password/group on startup and if they're not set, set them
-* Allow group changing - if you change it in the preferences, switch groups when you return to the chat.
-* Allow /w from menu
 * Figure out how to do text selecting within the edittext.
      See https://guides.codepath.com/android/Working-with-the-TextView#inserting-html-formatting
      https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124#file-readme-md
