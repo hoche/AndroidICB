@@ -1,5 +1,5 @@
 # AndroidICB
-Android Client for ICB (Internet Citizen's Band)
+Android Client for [ICB (Internet Citizen's Band)](http://www.icb.net) chat.
 
 This is a really basic client. It's still a work in progress.
 
