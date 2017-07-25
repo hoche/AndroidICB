@@ -10,9 +10,11 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/input"
         android:layout_alignParentTop="true"
-        android:headerDividersEnabled="false"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
         android:divider="@android:color/transparent"
         android:dividerHeight="0dp"
+        android:headerDividersEnabled="false"
         android:stackFromBottom="true"
         android:transcriptMode="alwaysScroll" />
 
