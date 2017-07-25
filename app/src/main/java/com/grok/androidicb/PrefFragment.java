@@ -21,8 +21,13 @@
 
 package com.grok.androidicb;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
+import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceGroup;
 
 public class PrefFragment extends PreferenceFragment {
 
@@ -30,5 +35,27 @@ public class PrefFragment extends PreferenceFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
+
+        updateSummary(getPreferenceScreen());
+    }
+
+    private void updateSummary(Preference p)
+    {
+        if (p instanceof PreferenceGroup) {
+            // recurse
+            PreferenceGroup groupPref = (PreferenceGroup)p;
+            int prefCount = groupPref.getPreferenceCount();
+            for (int i = 0; i < prefCount; i++) {
+                updateSummary(groupPref.getPreference(i));
+            }
+        }
+        if(p instanceof ListPreference) {
+            ListPreference listPref = (ListPreference)p;
+            p.setSummary(listPref.getEntry());
+        }
+        if(p instanceof EditTextPreference) {
+            EditTextPreference editTextPref = (EditTextPreference)p;
+            p.setSummary(editTextPref.getText());
+        }
     }
 }
