@@ -283,7 +283,7 @@ class IcbClient {
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_COMMAND");
                     break;
                 case PKT_COMMAND_OUT:
-                    LogUtil.INSTANCE.d(LOGTAG, "PKT_COMMAND_OUT");
+                    LogUtil.INSTANCE.d(LOGTAG, "PKT_COMMAND_OUTPUT");
                     msg = mAppHandler.obtainMessage(AppMessages.EVT_COMMAND_OUTPUT, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
                     break;

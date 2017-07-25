@@ -51,6 +51,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.grok.androidicb.protocol.CommandOutputPacket;
 import com.grok.androidicb.protocol.ErrorPacket;
 import com.grok.androidicb.protocol.OpenPacket;
 import com.grok.androidicb.protocol.PersonalPacket;
@@ -474,6 +475,11 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 PersonalPacket pkt = (PersonalPacket) msg.obj;
                 String message = "&lt;*" + pkt.getNick() + "*&gt; " + pkt.getText();
                 addMessageToOutput(message);
+                break;
+            }
+            case AppMessages.EVT_COMMAND_OUTPUT: {
+                CommandOutputPacket pkt = (CommandOutputPacket) msg.obj;
+                addMessageToOutput(pkt.getCommandOutput());
                 break;
             }
 
