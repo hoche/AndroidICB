@@ -1,7 +1,6 @@
 # AndroidICB
 Android Client for ICB (Internet Citizen's Band)
 
-## Introduction
 This is a really basic client. It's still a work in progress.
 
 When you launch it, you need to choose the Preferences item from the menu and set your nick, group, and (optionally) a password.
