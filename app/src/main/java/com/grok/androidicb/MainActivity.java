@@ -381,7 +381,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         mClient.stop();
         updateConnectionMenuItemStatus();
-        addMessageToOutput("[=Disconnected=]");
     }
 
     protected void buildDisconnectAlert() {
