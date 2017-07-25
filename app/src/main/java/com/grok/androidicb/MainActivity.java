@@ -25,6 +25,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -148,6 +150,17 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
 
         setupLayout();
+
+        try {
+            PackageInfo pInfo = this.getPackageManager().getPackageInfo(getPackageName(), 0);
+            Toast toast = Toast.makeText(MainActivity.this,
+                    getString(R.string.app_name) + " " + pInfo.versionName,
+                    Toast.LENGTH_SHORT);
+            toast.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
+            toast.show();
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
 
         /*
         new PatternEditableBuilder().
