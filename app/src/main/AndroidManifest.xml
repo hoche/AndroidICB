@@ -19,10 +19,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".PrefActivity" android:label="@string/pref_title">
-            <intent-filer>
+            <intent-filter>
                 <action android:name=".Preferences" />
                 <category android:name="android.intent.category.PREFERENCE" />
-            </intent-filer>
+            </intent-filter>
         </activity>
     </application>
 
