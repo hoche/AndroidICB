@@ -1,46 +1,39 @@
-<?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
         android:title="Connection">
-        <EditTextPreference
+        <com.grok.androidicb.EditTextPreference
             android:defaultValue="@string/default_server"
             android:key="server"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Server" />
-        <EditTextPreference
+        <com.grok.androidicb.EditTextPreference
             android:defaultValue="@string/default_port"
             android:inputType="number"
             android:key="port"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Port" />
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="autologin"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Automatically log in on App launch?" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:title="User">
-        <EditTextPreference
+        <com.grok.androidicb.EditTextPreference
             android:key="nick"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Nickname" />
-        <EditTextPreference
+        <com.grok.androidicb.EditTextPreference
             android:key="password"
             android:password="true"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Password" />
-        <EditTextPreference
+        <com.grok.androidicb.EditTextPreference
             android:key="group"
-            android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="Group" />
     </PreferenceCategory>
