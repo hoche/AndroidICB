@@ -71,9 +71,12 @@ public class PathUtils {
         String filesDirPath = Environment.getExternalStorageDirectory().toString() +
                 "/" + ctx.getResources().getString(R.string.app_name);
 
-        File ret = ctx.getExternalFilesDir(null);
-        if(!ret.exists()) {
-            ret.mkdirs();
+        File ret = ctx.getExternalFilesDir(null); // this can be null
+        if (ret == null) {
+            ret = ctx.getFilesDir(); // never null (supposedly)
+        }
+        if (!ret.exists()) {
+          ret.mkdirs();
         }
         return ret;
     }
