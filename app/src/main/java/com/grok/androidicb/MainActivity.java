@@ -28,7 +28,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Handler.Callback;
@@ -47,6 +46,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -187,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
+        LogUtil.INSTANCE.d(LOGTAG, "onCreateOptionsMenu()");
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu, menu);
         mConnectMenuItem = menu.findItem(R.id.connect);
@@ -195,6 +196,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
+        LogUtil.INSTANCE.d(LOGTAG, "onOptionsItemSelected()");
         switch (item.getItemId()) {
             case R.id.connect:
                 if (mClient != null) {
@@ -264,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     {
         LogUtil.INSTANCE.d(LOGTAG, "setUpScreen()");
         setContentView(R.layout.mainactivity);
+
         mOutputListView = (ListView) findViewById(R.id.output);
         mOutputListView.setAdapter(mOutputArrayListAdapter);
 
@@ -278,8 +281,19 @@ public class MainActivity extends AppCompatActivity implements Callback {
         }
         mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-                // If the action is a key-up event on the return key, send the message
+                boolean handled = false;
+
                 if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
+                    // key-up event on the return key (hard keyboard?)
+                    handled = true;
+                } else if (actionId == EditorInfo.IME_ACTION_SEND) {
+                    // The soft keyboard was up and they hit done.
+                    InputMethodManager imm = (InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    handled = true;
+                }
+
+                if (handled) {
                     String message = view.getText().toString();
                     addMessageToOutput(message);
                     if (mClient != null) {
@@ -287,7 +301,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
                         mInputEditText.getText().clear();
                     }
                 }
-                return true;
+
+                return handled;
             }
         });
     }
