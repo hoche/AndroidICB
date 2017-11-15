@@ -28,6 +28,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Handler.Callback;
@@ -71,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
     private static final String LOGTAG = "MainActivity";
 
-    // Custom adapter to display Spanned (HTML) data in ListView.
+    // Custom adapter to manipulate Spanned text in ListView.
     private static class SpannedAdapter extends ArrayAdapter<String>  {
         private Context mContext;
         private ArrayList<String> mMessageList;
@@ -108,10 +109,36 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 result=convertView;
             }
 
-            viewHolder.text.setText(Html.fromHtml(message));
+            //viewHolder.text.setText(Html.fromHtml(message));
+            viewHolder.text.setText(message);
 
-            return convertView;
-        }
+            // See https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124
+            // linkify anything at the start of a line between < and >
+            new PatternEditableBuilder()
+                .addPattern(Pattern.compile("^<\\*(\\w+)\\*> "), Color.BLUE,
+                    new PatternEditableBuilder.SpannableClickedListener() {
+
+                        @Override
+                        public void onSpanClicked(String text) {
+                            Toast.makeText(mContext, "Clicked private nickname: " + text,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                    })
+                .addPattern(Pattern.compile("^<(\\w+)> "), Color.BLUE,
+                    new PatternEditableBuilder.SpannableClickedListener() {
+
+                        @Override
+                        public void onSpanClicked(String text) {
+                            Toast.makeText(mContext, "Clicked public nickname: " + text,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                    })
+                .into(viewHolder.text);
+
+                return convertView;
+            }
 
         static class ViewHolder {
             TextView text;
@@ -161,20 +188,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
-
-        /*
-        new PatternEditableBuilder().
-            addPattern(Pattern.compile("&lt;(\\w+)&gt;"), Color.BLUE,
-                new PatternEditableBuilder.SpannableClickedListener() {
-
-                    @Override
-                    public void onSpanClicked(String text) {
-                        Toast.makeText(MainActivity.this, "Clicked nickname: " + text,
-                                Toast.LENGTH_SHORT).show();
-                    }
-
-                }).into(mInputEditText);
-        */
 
         buildDisconnectAlert();
 
@@ -287,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                     // key-up event on the return key (hard keyboard?)
                     handled = true;
                 } else if (actionId == EditorInfo.IME_ACTION_SEND) {
-                    // The soft keyboard was up and they hit done.
+                    // The soft keyboard was up and they hit send.
                     InputMethodManager imm = (InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                     handled = true;
@@ -494,13 +507,13 @@ public class MainActivity extends AppCompatActivity implements Callback {
             }
             case AppMessages.EVT_OPEN_MSG: {
                 OpenPacket pkt = (OpenPacket) msg.obj;
-                String message = "&lt;" + pkt.getNick() + "&gt; " + pkt.getText();
+                String message = "<" + pkt.getNick() + "> " + pkt.getText();
                 addMessageToOutput(message);
                 break;
             }
             case AppMessages.EVT_PERSONAL_MSG: {
                 PersonalPacket pkt = (PersonalPacket) msg.obj;
-                String message = "&lt;*" + pkt.getNick() + "*&gt; " + pkt.getText();
+                String message = "<*" + pkt.getNick() + "*> " + pkt.getText();
                 addMessageToOutput(message);
                 break;
             }

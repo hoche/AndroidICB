@@ -35,7 +35,8 @@ import java.util.regex.Pattern;
                 }
              }).into(textView);
 
-     See README for more details.
+     See README at https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124#file-readme-md
+     for more details.
  */
 
 public class PatternEditableBuilder {
