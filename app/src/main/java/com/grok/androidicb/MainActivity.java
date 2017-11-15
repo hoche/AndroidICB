@@ -38,6 +38,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -152,7 +153,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private AlertDialog mDisconnectAlert = null;
 
     private ListView mOutputListView = null;
-    private EditText mInputEditText = null;
 
     private ArrayList<String> mOutputArrayList;
     private SpannedAdapter mOutputArrayListAdapter;
@@ -287,16 +287,21 @@ public class MainActivity extends AppCompatActivity implements Callback {
         mOutputListView = (ListView) findViewById(R.id.output);
         mOutputListView.setAdapter(mOutputArrayListAdapter);
 
-        String savedText = null;
-        if (mInputEditText != null) {
-            savedText = mInputEditText.getText().toString();
-        }
-        mInputEditText = (EditText) findViewById(R.id.input);
-        if (savedText != null && savedText.length() > 0) {
-            mInputEditText.setText(savedText);
-            mInputEditText.setSelection(savedText.length());
-        }
-        mInputEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        EditText inputEditText = (EditText) findViewById(R.id.input);
+        // The following two lines, in conjuction with
+        //   android:inputType="text"
+        //   android:imeOptions="actionSend"
+        // are needed to give us multiline input along with a "Send" button
+        // in the popup keyboard. Just setting it to inputType="textMultiLine" disables
+        // the keyboard's "Send" button and reverts it back to a linefeed. Most irritating.
+        inputEditText.setHorizontallyScrolling(false);
+        inputEditText.setLines(Integer.MAX_VALUE);
+
+        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(inputEditText.getWindowToken(), 0);
+
+        inputEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+            @Override
             public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
                 boolean handled = false;
 
@@ -315,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                     addMessageToOutput(message);
                     if (mClient != null) {
                         mClient.sendCommand(message);
-                        mInputEditText.getText().clear();
+                        view.setText(null);
                     }
                 }
 
