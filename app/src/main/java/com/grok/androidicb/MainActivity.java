@@ -465,9 +465,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
             return;
         }
         if (mClient != null) {
-            mConnectMenuItem.setTitle("Disconnect");
+            mConnectMenuItem.setTitle(getString(R.string.disconnect));
         } else {
-            mConnectMenuItem.setTitle("Connect");
+            mConnectMenuItem.setTitle(getString(R.string.connect));
         }
     }
 
