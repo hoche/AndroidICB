@@ -3,11 +3,11 @@
 
     <item
         android:id="@+id/connect"
-        android:title="Connect"
+        android:title="@string/connect"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/preferences"
-        android:title="Preferences"
+        android:title="@string/preferences_title"
         app:showAsAction="never" />
 </menu>

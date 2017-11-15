@@ -26,7 +26,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import static com.grok.androidicb.Utilities.hexdump;
 import static com.grok.androidicb.protocol.ICBProtocol.MAX_OPEN_MESSAGE_SIZE;
 
 public class IcbWriteThread implements Runnable {
@@ -90,7 +89,7 @@ public class IcbWriteThread implements Runnable {
             return;
         }
 
-        OutputStream ostream = null;
+        OutputStream ostream;
         try {
             ostream = mSocket.getOutputStream();
         } catch (IOException e) {

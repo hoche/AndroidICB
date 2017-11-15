@@ -48,7 +48,6 @@ public class LogUtil {
     private final int MAX_FILE_COUNT = 20;
     private final long MAX_FILE_AGE = (1000 * 3600 * 24 * 14);  // 2 weeks
 
-    private Context mContext = null;
     private String mBaseFileName = null;
     private File mFile = null;
     private FileOutputStream mFileStream = null;
@@ -64,9 +63,8 @@ public class LogUtil {
         // Exists only to defeat instantiation
     }
 
-    public synchronized void SetLogFile(String filename, Context ctx) {
+    public synchronized void SetLogFile(String filename) {
         mBaseFileName = filename;
-        mContext = ctx;
 
         OpenNewLogFile(); // this will take care of closing one that's already open
     }
@@ -119,7 +117,7 @@ public class LogUtil {
     private synchronized void OpenNewLogFile()
     {
         // create a nice file name, complete with datetime stamp
-        String filepath = PathUtils.createPath(mBaseFileName, mContext);
+        String filepath = PathUtils.createPath(mBaseFileName);
 
         // Close the old stream
         if (mFileStream != null) {

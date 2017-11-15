@@ -21,7 +21,6 @@
 
 package com.grok.androidicb;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;

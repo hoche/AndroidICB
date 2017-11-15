@@ -4,4 +4,7 @@
     <string name="default_server">default.icb.net</string>
     <string name="default_port">7326</string>
     <string name="default_group">1</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="preferences_title">Preferences</string>
 </resources>

@@ -65,7 +65,7 @@ public class IcbReadThread implements Runnable {
             return;
         }
 
-        InputStream istream = null;
+        InputStream istream;
         try {
             istream = mSocket.getInputStream();
         } catch (IOException e) {

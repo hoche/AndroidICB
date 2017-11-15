@@ -137,7 +137,7 @@ class IcbClient {
 
     public void sendCommand(String cmd) {
         int cmdLength = cmd.length();
-        if (cmd == null || cmdLength == 0) {
+        if (cmdLength == 0) {
             return;
         }
 

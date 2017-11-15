@@ -22,8 +22,6 @@
 
 package com.grok.androidicb;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;

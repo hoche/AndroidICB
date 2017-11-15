@@ -38,8 +38,7 @@ public class PathUtils {
         SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
-        String filename = filepart + "_" + fileName;
-        return filename;
+        return filepart + "_" + fileName;
     }
     public static String createPath(String fileName, Context ctx)
     {
@@ -50,8 +49,7 @@ public class PathUtils {
         SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
-        String filename = filesDirPath + "/" + filepart + "_" + fileName;
-        return filename;
+        return filesDirPath + "/" + filepart + "_" + fileName;
     }
 
     public static String createPath(String fileType,String suffix, Context ctx) {
@@ -62,8 +60,7 @@ public class PathUtils {
         SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
-        String filename = filesDirPath + "/" + filepart + "_" + fileType + suffix;
-        return filename;
+        return filesDirPath + "/" + filepart + "_" + fileType + suffix;
     }
 
     public static File getStorageDir(Context ctx) {

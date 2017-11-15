@@ -34,10 +34,10 @@ import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Html;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -85,7 +85,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         // returns the actual view used as a row within the ListView at a
         // particular position
-        public View getView(int position, View convertView, ViewGroup parent) {
+        @NonNull
+        public View getView(int position, View convertView, @NonNull ViewGroup parent) {
             // Get the data item for this position
             String message = getItem(position);
 
@@ -101,12 +102,12 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 convertView = inflater.inflate(R.layout.message, parent, false);
                 viewHolder.text = (TextView) convertView.findViewById(R.id.output_message);
 
-                result=convertView;
+                result = convertView;
 
                 convertView.setTag(viewHolder);
             } else {
                 viewHolder = (ViewHolder) convertView.getTag();
-                result=convertView;
+                result = convertView;
             }
 
             //viewHolder.text.setText(Html.fromHtml(message));
@@ -137,8 +138,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
                     })
                 .into(viewHolder.text);
 
-                return convertView;
-            }
+            return result;
+        }
 
         static class ViewHolder {
             TextView text;
@@ -167,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
         super.onCreate(savedInstanceState);
 
         mContext = getApplicationContext();
-        LogUtil.INSTANCE.SetLogFile("log.txt", mContext);
+        LogUtil.INSTANCE.SetLogFile("log.txt");
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
@@ -341,7 +342,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         @Override
         protected Integer doInBackground(Void...params) {
-            InetAddress serverAddr = null;
+            InetAddress serverAddr;
             try {
                 // The host name can either be a machine name, such as "java.sun.com", or a textual representation of its IP address
                 serverAddr = InetAddress.getByName(mServer);

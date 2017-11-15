@@ -45,12 +45,13 @@ public class CommandOutputPacket extends Packet {
 
         } else if (cmdOutputType.compareTo("wg") == 0) {
             // group name from a who command
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             buffer.append("Group: ");
             buffer.append(getField(1));
             if (getFieldCount() > 2) {
                 buffer.append(" ").append(getField(2));
             }
+            cmdOutput = buffer.toString();
 
         } else if (cmdOutputType.compareTo("wh") == 0) {
             // who header
@@ -59,7 +60,8 @@ public class CommandOutputPacket extends Packet {
         } else if (cmdOutputType.compareTo("wl") == 0) {
             parseWhoListing();
 
-        } else if (cmdOutputType.compareTo("ch") == 0) {
+        } else //noinspection StatementWithEmptyBody
+            if (cmdOutputType.compareTo("ch") == 0) {
             //System.err.println("unsupported 'ch' command output received");
 
         } else if (cmdOutputType.compareTo("c") == 0) {

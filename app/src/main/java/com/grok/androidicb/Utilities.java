@@ -75,14 +75,12 @@ public class Utilities {
 	}
 
 	public static String fourCCToString(int fourCC) {
-		StringBuilder sb = new StringBuilder();
-		sb.append('\'');
-		sb.append((fourCC & 0xFF000000) >> 24);
-		sb.append((fourCC & 0x00FF0000) >> 16);
-		sb.append((fourCC & 0x0000FF00) >> 8);
-		sb.append((fourCC & 0x000000FF));
-		sb.append('\'');
-		return sb.toString();
+        return "'" +
+                ((fourCC & 0xFF000000) >> 24) +
+                ((fourCC & 0x00FF0000) >> 16) +
+                ((fourCC & 0x0000FF00) >> 8) +
+                (fourCC & 0x000000FF) +
+                '\'';
 	}
 
 	public static void enablePreference(PreferenceManager preferenceMgr,
@@ -127,7 +125,7 @@ public class Utilities {
 	 *            The bytes array to dump
 	 * @return A string representation of the array of bytes
 	 */
-	public static final String hexdump(byte[] buffer, int offset, int amountToDump) {
+	public static String hexdump(byte[] buffer, int offset, int amountToDump) {
 		if (buffer == null) {
 			return "";
 		}
@@ -146,12 +144,12 @@ public class Utilities {
 		return sb.toString();
 	}
 
-    public static final String hexdumpAlpha(byte[] buffer, int offset, int amountToDump) {
+    public static String hexdumpAlpha(byte[] buffer, int offset, int amountToDump) {
         if (buffer == null) {
             return "";
         }
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         amountToDump = Math.min(offset + amountToDump, buffer.length);
 
@@ -161,7 +159,9 @@ public class Utilities {
                     .append((char) (HEX_CHAR[buffer[i] & 0x000F]))
                     .append(" ");
             if (buffer[i] >= 0x20 & buffer[i] < 0x7F) {
-                sb.append("'" + (char)buffer[i] + "' ");
+                sb.append("'")
+					.append((char)buffer[i])
+					.append("' ");
             } else {
                 sb.append("'.' ");
             }

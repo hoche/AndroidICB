@@ -48,7 +48,7 @@ public enum ICBProtocol {
         return pktType;
     }
 
-    private ICBProtocol(final char pktType) {
+    ICBProtocol(final char pktType) {
         this.pktType = pktType;
     }
 
