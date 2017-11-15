@@ -30,37 +30,23 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class PathUtils {
-    public static final String DATE_STRING="yyyy-MM-dd-HH_mm_ss";
+    private static final String DATE_STRING="yyyy-MM-dd-HH_mm_ss";
 
-    public static String createPath(String fileName)
+    public static String createDatedFilePath(String fileDirPath, String baseName)
     {
         long dateTaken = System.currentTimeMillis();
         SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
-        return filepart + "_" + fileName;
-    }
-    public static String createPath(String fileName, Context ctx)
-    {
-        long dateTaken = System.currentTimeMillis();
-        File filesDir = getStorageDir(ctx);
-        String filesDirPath = filesDir.getAbsolutePath();
-        filesDir.mkdirs();
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
-        Date date = new Date(dateTaken);
-        String filepart = dateFormat.format(date);
-        return filesDirPath + "/" + filepart + "_" + fileName;
+        return fileDirPath + "/" + filepart + "_" + baseName;
     }
 
-    public static String createPath(String fileType,String suffix, Context ctx) {
+    public static String createDatedFilePath(String fileDirPath, String fileType, String suffix, Context ctx) {
         long dateTaken = System.currentTimeMillis();
-        File filesDir = getStorageDir(ctx);
-        String filesDirPath = filesDir.getAbsolutePath();
-        filesDir.mkdirs();
         SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
-        return filesDirPath + "/" + filepart + "_" + fileType + suffix;
+        return fileDirPath + "/" + filepart + "_" + fileType + suffix;
     }
 
     public static File getStorageDir(Context ctx) {

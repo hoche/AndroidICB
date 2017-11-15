@@ -168,7 +168,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
         super.onCreate(savedInstanceState);
 
         mContext = getApplicationContext();
-        LogUtil.INSTANCE.SetLogFile("log.txt");
+
+        String filesDirPath = PathUtils.getStorageDir(mContext).getAbsolutePath();
+
+        LogUtil.INSTANCE.SetLogFile(filesDirPath, "log.txt");
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
