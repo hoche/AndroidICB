@@ -18,3 +18,7 @@
 
 * Fix the keyboard for the text entry to have a "Send" button.
   Not sure why this isn't working.
+
+* BUG: the LogUtils/PathUtils expects a context to figure out where to
+write files. Can't use a context in a static object. This causes the logging
+to crash.
