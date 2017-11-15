@@ -1,10 +1,20 @@
-7/24/17
+11/14/17
 
-* Figure out how to do text selecting within the edittext.
+* The message list is a ListView of TextViews. 
+  Figure out how to do text selecting within the TextView.
      See https://guides.codepath.com/android/Working-with-the-TextView#inserting-html-formatting
      https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124#file-readme-md
+  Note: the main part of this is done, but need to figure out
+  how to just select the submatch part, and then create a "send private
+  message" sort of thing.
+
 * Handle other packets - Beep/Ping/Pong
+
 * We set 
                 mSocket.setKeepAlive(true);
                 mSocket.setSoTimeout(Integer.MAX_VALUE);
-  Make sure that we don't get reaped accidently by the AndroidOS even though the socket is still connected.
+  Make sure that we don't get reaped accidently by the AndroidOS even though
+  the socket is still connected.
+
+* Fix the keyboard for the text entry to have a "Send" button.
+  Not sure why this isn't working.
