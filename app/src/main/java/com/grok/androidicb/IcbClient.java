@@ -216,9 +216,7 @@ class IcbClient {
                 remaining = "";
             }
 
-            StringBuffer buf = new StringBuffer(nick.length() + 1 + currentMsg.length());
-            buf.append(nick).append(' ').append(currentMsg);
-            sendCommandMessage("m", buf.toString());
+            sendCommandMessage("m", nick + ' ' + currentMsg);
 
         } while (remaining.length() > 0);
 
