@@ -13,7 +13,7 @@
 * We set 
                 mSocket.setKeepAlive(true);
                 mSocket.setSoTimeout(Integer.MAX_VALUE);
-  Make sure that we don't get reaped accidently by the AndroidOS even though
+  Make sure that we don't get reaped accidentally by the AndroidOS even though
   the socket is still connected.
 
 * Fix the keyboard for the text entry to have a "Send" button.

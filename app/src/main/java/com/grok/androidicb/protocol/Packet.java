@@ -98,7 +98,7 @@ public class Packet {
      * field does not exist.
      *
      * @param fieldNo the field number to extract
-     * @return the raw texted for the specified field, or null
+     * @return the raw text for the specified field, or null
      */
     protected String getField(int fieldNo) {
         if (fieldNo >= 0 && fieldNo < fields.size()) {
@@ -153,7 +153,7 @@ public class Packet {
     }
 
     private ICBProtocol type;
-    private final ArrayList<String> fields = new ArrayList<String>(ICBProtocol.MAX_FIELDS);
+    private final ArrayList<String> fields = new ArrayList<>(ICBProtocol.MAX_FIELDS);
 
     /**
      * A map of ICB packet types to the class objects that should be created
@@ -162,7 +162,7 @@ public class Packet {
     private static final Map<Character, Class> PACKET_CLASSES;
 
     static {
-        Map<Character, Class> packets = new HashMap<Character, Class>();
+        Map<Character, Class> packets = new HashMap<>();
 
         packets.put(ICBProtocol.PKT_LOGIN.getPacketType(), LoginPacket.class);
         packets.put(ICBProtocol.PKT_ERROR.getPacketType(), ErrorPacket.class);

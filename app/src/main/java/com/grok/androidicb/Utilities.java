@@ -87,7 +87,7 @@ public class Utilities {
 			String prefKey, Boolean isEnabled) {
 		Preference pref = preferenceMgr.findPreference(prefKey);
 		if (pref != null) {
-			preferenceMgr.findPreference(prefKey).setEnabled(isEnabled);
+			pref.setEnabled(isEnabled);
 		}
 	}
 
@@ -130,7 +130,7 @@ public class Utilities {
 			return "";
 		}
 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		amountToDump = Math.min(offset + amountToDump, buffer.length);
 
@@ -228,10 +228,7 @@ public class Utilities {
 
 	public static byte[] zipInflate(final byte[] compressed) throws IOException {
 		ByteArrayInputStream byteIn = new ByteArrayInputStream(compressed);
-		ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-		InflaterInputStream inflaterIn = null;
-		try {
-			inflaterIn = new InflaterInputStream(byteIn);
+		try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream(); InflaterInputStream inflaterIn = new InflaterInputStream(byteIn)) {
 			int read;
 			byte[] buffer = new byte[512];
 			do {
@@ -241,9 +238,7 @@ public class Utilities {
 				}
 			} while (read >= 0);
 			return byteOut.toByteArray();
-		} finally {
-			inflaterIn.close();
-			byteOut.close();
 		}
 	}
+
 }

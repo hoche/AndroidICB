@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
             viewHolder.text.setText(message);
 
             // See https://gist.github.com/nesquena/f2504c642c5de47b371278ee61c75124
-            // linkify anything at the start of a line between < and >
+            // Make anything at the start of a line between < and > a link.
             new PatternEditableBuilder()
                 .addPattern(Pattern.compile("^<\\*(\\w+)\\*> "), Color.BLUE,
                     new PatternEditableBuilder.SpannableClickedListener() {
@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         mHandler = new Handler(this);
 
-        mOutputArrayList = new ArrayList<String>();
+        mOutputArrayList = new ArrayList<>();
         mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
 
         setupLayout();
@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
         outputListView.setAdapter(mOutputArrayListAdapter);
 
         EditText inputEditText = findViewById(R.id.input);
-        // The following two lines, in conjuction with
+        // The following two lines, in conjunction with
         //   android:inputType="text"
         //   android:imeOptions="actionSend"
         // are needed to give us multiline input along with a "Send" button
@@ -292,7 +292,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
         inputEditText.setLines(Integer.MAX_VALUE);
 
         InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(inputEditText.getWindowToken(), 0);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(inputEditText.getWindowToken(), 0);
+        }
 
         inputEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
@@ -305,7 +307,9 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 } else if (actionId == EditorInfo.IME_ACTION_SEND) {
                     // The soft keyboard was up and they hit send.
                     InputMethodManager imm = (InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    }
                     handled = true;
                 }
 

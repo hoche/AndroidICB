@@ -115,7 +115,7 @@ class IcbClient {
     }
 
     private String removeControlCharacters(String s) {
-        StringBuffer buf = new StringBuffer(s.length());
+        StringBuilder buf = new StringBuilder(s.length());
         char c;
         for (int i = 0, n = s.length(); i < n; i++) {
             c = s.charAt(i);
@@ -299,7 +299,7 @@ class IcbClient {
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PING");
                     msg = mAppHandler.obtainMessage(AppMessages.EVT_PING, 0, 0, pkt);
                     mAppHandler.sendMessage(msg);
-                    // also create a new ping messge here.
+                    // also create a new ping message here.
                     break;
                 case PKT_PONG:
                     LogUtil.INSTANCE.d(LOGTAG, "PKT_PONG");

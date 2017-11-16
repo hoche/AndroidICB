@@ -65,7 +65,7 @@ public enum ICBProtocol {
     private final static Map<Character, ICBProtocol> PACKET_TYPES;
 
     static {
-        Map<Character, ICBProtocol> packetTypes = new HashMap<Character, ICBProtocol>();
+        Map<Character, ICBProtocol> packetTypes = new HashMap<>();
         packetTypes.put(PKT_LOGIN.getPacketType(), PKT_LOGIN);
         packetTypes.put(PKT_OPEN.getPacketType(), PKT_OPEN);
         packetTypes.put(PKT_PERSONAL.getPacketType(), PKT_PERSONAL);

@@ -37,7 +37,7 @@ Fields: Minimum: 5, Maximum: 7
 
 Thus the ICB Login Packet has the following layout:
 
-aLoginid^ANickname^ADefaultGroup^ACommand^APassword^AGroupStatus^AProtocolLevel
+aLoginId^ANickname^ADefaultGroup^ACommand^APassword^AGroupStatus^AProtocolLevel
  */
 
 package com.grok.androidicb.protocol;

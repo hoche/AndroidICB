@@ -115,7 +115,7 @@ public class CommandOutputPacket extends Packet {
     private String cmdOutput;
 
     private void parseWhoListing() {
-        StringBuffer buffer = new StringBuffer(80);
+        StringBuilder buffer = new StringBuilder(80);
 
         /* indicate group moderator */
         buffer.append((getField(1).charAt(0) == 'm') ? '*' : ' ');

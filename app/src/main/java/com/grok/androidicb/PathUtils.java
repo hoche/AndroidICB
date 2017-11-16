@@ -38,16 +38,14 @@ public class PathUtils {
         long dateTaken = System.currentTimeMillis();
         @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
-        String filepart = dateFormat.format(date);
-        return fileDirPath + "/" + filepart + "_" + baseName;
+        return fileDirPath + "/" + dateFormat.format(date) + "_" + baseName;
     }
 
     public static String createDatedFilePath(String fileDirPath, String fileType, String suffix, Context ctx) {
         long dateTaken = System.currentTimeMillis();
         @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
-        String filepart = dateFormat.format(date);
-        return fileDirPath + "/" + filepart + "_" + fileType + suffix;
+        return fileDirPath + "/" + dateFormat.format(date) + "_" + fileType + suffix;
     }
 
     public static File getStorageDir(Context ctx) {

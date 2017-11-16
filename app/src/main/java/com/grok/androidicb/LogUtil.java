@@ -92,17 +92,17 @@ public class LogUtil {
                 return;
             }
 
-            for (int i = 0; i < files.length; i++) {
+            for (File file : files) {
 
-                msg = "FileName:" + files[i].getName();
+                msg = "FileName:" + file.getName();
 
                 // Get the last modified date. Milliseconds since 1970
-                Long lastmodified = files[i].lastModified();
+                Long lastmodified = file.lastModified();
 
                 // delete files older than MAX_FILE_AGE
                 if (lastmodified + MAX_FILE_AGE < System.currentTimeMillis()) {
                     msg += " - deleted\n";
-                    files[i].delete();
+                    file.delete();
                 } else {
                     msg += " - OK\n";
                 }
@@ -169,7 +169,7 @@ public class LogUtil {
         // However, if we've called this, we're trying to log remotely, and we
         // want to do that on the main thread. (Our alternative is to buffer it
         // up and send later and hope we don't crash in the meantime, or send it
-        // to a logservice to forward). So turn off the strict mode.
+        // to a log service to forward). So turn off the strict mode.
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -179,7 +179,7 @@ public class LogUtil {
 
     public synchronized void SetTextView(TextView tv) {
         // Use a WeakReference to ensure the TextView can be garbage collected
-        mTv = new WeakReference<TextView>(tv);
+        mTv = new WeakReference<>(tv);
     }
 
     private void ConnectToLogServer() {
