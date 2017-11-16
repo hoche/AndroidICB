@@ -7,4 +7,6 @@
     <string name="connect">Connect</string>
     <string name="disconnect">Disconnect</string>
     <string name="preferences_title">Preferences</string>
+    <string name="send">Send</string>
+    <string name="cancel">Cancel</string>
 </resources>
