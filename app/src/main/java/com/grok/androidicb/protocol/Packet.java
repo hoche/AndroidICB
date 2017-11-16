@@ -132,17 +132,17 @@ public class Packet {
      */
     public static Packet getInstance(final String rawPacket) throws ProtocolException {
         final char pktType = rawPacket.charAt(0);
-        final Class c = PACKET_CLASSES.get(pktType);
+        final Class<?> c = PACKET_CLASSES.get(pktType);
         if (c == null) {
             throw new ProtocolException("invalid packet type");
         }
 
         // locate a constructor that takes a single String argument
-        final Class[] argsClass = new Class[]{String.class};
+        final Class<?>[] argsClass = new Class[]{String.class};
         final Object[] args = new Object[]{rawPacket};
 
         try {
-            final Constructor strArgConstructor = c.getConstructor(argsClass);
+            final Constructor<?> strArgConstructor = c.getConstructor(argsClass);
             return (Packet) strArgConstructor.newInstance(args);
         } catch (Exception ex) {
             throw new ProtocolException(ex.getMessage());
