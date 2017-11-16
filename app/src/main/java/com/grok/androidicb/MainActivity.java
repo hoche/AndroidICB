@@ -511,41 +511,6 @@ public class MainActivity extends AppCompatActivity implements Callback {
         dialog.show();
     }
 
-    protected void doPrivateMessageInputDialog(String sendToNick)
-    {
-        final String nick = sendToNick;
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        builder.setTitle(nick);
-
-        // Set up the input
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setHorizontallyScrolling(false);
-        input.setLines(Integer.MAX_VALUE);
-        builder.setView(input);
-
-        // Set up th   e buttons
-        builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String message = input.getText().toString();
-                addMessageToOutput("--> <*" + nick + "*>" + message);
-                if (mClient != null) {
-                    mClient.sendPersonalMessage(nick, message);
-                }
-            }
-        });
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-
-        builder.show();
-    }
-
     protected synchronized void updateConnectionMenuItemStatus()
     {
         if (mConnectMenuItem == null) {
