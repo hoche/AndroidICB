@@ -24,6 +24,8 @@
 
 package com.grok.androidicb.protocol;
 
+import android.annotation.SuppressLint;
+
 import java.text.NumberFormat;
 import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
@@ -78,7 +80,7 @@ public class DateTimeUtils {
             buffer.append("    ");
         }
 
-        SimpleDateFormat df = new SimpleDateFormat("hh:mm aa");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("hh:mm aa");
         df.setTimeZone(TimeZone.getDefault());
         buffer.append(df.format(eventTime));
 

@@ -22,6 +22,7 @@
 
 package com.grok.androidicb;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Environment;
 
@@ -35,7 +36,7 @@ public class PathUtils {
     public static String createDatedFilePath(String fileDirPath, String baseName)
     {
         long dateTaken = System.currentTimeMillis();
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
         return fileDirPath + "/" + filepart + "_" + baseName;
@@ -43,7 +44,7 @@ public class PathUtils {
 
     public static String createDatedFilePath(String fileDirPath, String fileType, String suffix, Context ctx) {
         long dateTaken = System.currentTimeMillis();
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_STRING);
         Date date = new Date(dateTaken);
         String filepart = dateFormat.format(date);
         return fileDirPath + "/" + filepart + "_" + fileType + suffix;

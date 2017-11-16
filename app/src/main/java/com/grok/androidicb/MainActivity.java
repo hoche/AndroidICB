@@ -38,7 +38,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -101,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 viewHolder = new ViewHolder();
                 LayoutInflater inflater = LayoutInflater.from(getContext());
                 convertView = inflater.inflate(R.layout.message, parent, false);
-                viewHolder.text = (TextView) convertView.findViewById(R.id.output_message);
+                viewHolder.text = convertView.findViewById(R.id.output_message);
 
                 result = convertView;
 

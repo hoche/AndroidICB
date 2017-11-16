@@ -21,7 +21,6 @@
 
 package com.grok.androidicb;
 
-import android.content.Context;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.TextView;
@@ -38,15 +37,16 @@ import java.net.Socket;
 public class LogUtil {
     public final static LogUtil INSTANCE = new LogUtil();
 
-    // XXX debug values
-    //private final long MAX_FILE_SIZE = (50 * 1024 * 1024); // 5 MB
-    //private final int MAX_FILE_COUNT = 5;
-    //private final long MAX_FILE_AGE = (1000 * 3600 * 2);  // 2 hours
-
     // release values
+    @SuppressWarnings("FieldCanBeLocal")
     private final long MAX_FILE_SIZE = (50 * 1024 * 1024); // 50 MB
+    //private final long MAX_FILE_SIZE = (50 * 1024 * 1024); // 5 MB (debug)
+    @SuppressWarnings("FieldCanBeLocal")
     private final int MAX_FILE_COUNT = 20;
+    //private final int MAX_FILE_COUNT = 5; // (debug)
+    @SuppressWarnings("FieldCanBeLocal")
     private final long MAX_FILE_AGE = (1000 * 3600 * 24 * 14);  // 2 weeks
+    //private final long MAX_FILE_AGE = (1000 * 3600 * 2);  // 2 hours (debug)
 
     private String mLogFileDirPath = null;
     private String mBaseFileName = null;
