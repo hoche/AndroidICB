@@ -65,6 +65,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -121,8 +122,16 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
                         @Override
                         public void onSpanClicked(String text) {
-                            Toast.makeText(mContext, "Clicked private nickname: " + text,
-                                    Toast.LENGTH_SHORT).show();
+                            Pattern p = Pattern.compile("<\\*(\\w+)\\*>");
+                            Matcher m = p.matcher(text);
+                            m.find();
+                            if (m.groupCount() > 0) {
+                                String nick = m.group(1);
+                                if (nick != null) {
+                                    Toast.makeText(mContext, "Clicked private nickname: " + nick,
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            }
                         }
 
                     })
@@ -131,8 +140,16 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
                         @Override
                         public void onSpanClicked(String text) {
-                            Toast.makeText(mContext, "Clicked public nickname: " + text,
-                                    Toast.LENGTH_SHORT).show();
+                            Pattern p = Pattern.compile("<(\\w+)>");
+                            Matcher m = p.matcher(text);
+                            m.find();
+                            if (m.groupCount() > 0) {
+                                String nick = m.group(1);
+                                if (nick != null) {
+                                    Toast.makeText(mContext, "Clicked public nickname: " + nick,
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            }
                         }
 
                     })
