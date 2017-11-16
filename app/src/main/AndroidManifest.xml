@@ -20,7 +20,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".PrefActivity" android:label="@string/pref_title">
+        <activity android:name=".PrefActivity"
+            android:label="@string/pref_title"
+            android:exported="false">
             <intent-filter>
                 <action android:name=".Preferences" />
                 <category android:name="android.intent.category.PREFERENCE" />
