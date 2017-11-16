@@ -21,6 +21,7 @@
 
 package com.grok.androidicb;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -38,6 +39,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -49,6 +51,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -74,14 +77,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
     private static final String LOGTAG = "MainActivity";
 
     // Custom adapter to manipulate Spanned text in ListView.
-    private static class SpannedAdapter extends ArrayAdapter<String>  {
-        private Context mContext;
-        private ArrayList<String> mMessageList;
+    private class SpannedAdapter extends ArrayAdapter<String>  {
 
         public SpannedAdapter(Context context, ArrayList<String> messageList) {
             super(context, R.layout.message, messageList);
-            mContext = context;
-            mMessageList = messageList;
         }
 
         // returns the actual view used as a row within the ListView at a
@@ -128,8 +127,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                             if (m.groupCount() > 0) {
                                 String nick = m.group(1);
                                 if (nick != null) {
-                                    Toast.makeText(mContext, "Clicked private nickname: " + nick,
-                                            Toast.LENGTH_SHORT).show();
+                                    doPersonalMessageDialog(nick);
                                 }
                             }
                         }
@@ -146,8 +144,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
                             if (m.groupCount() > 0) {
                                 String nick = m.group(1);
                                 if (nick != null) {
-                                    Toast.makeText(mContext, "Clicked public nickname: " + nick,
-                                            Toast.LENGTH_SHORT).show();
+                                    doPersonalMessageDialog(nick);
                                 }
                             }
                         }
@@ -158,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
             return result;
         }
 
-        static class ViewHolder {
+        class ViewHolder {
             TextView text;
         }
     }
@@ -293,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     protected void setupLayout()
     {
         LogUtil.INSTANCE.d(LOGTAG, "setUpScreen()");
-        setContentView(R.layout.mainactivity);
+        setContentView(R.layout.main_activity);
 
         ListView outputListView = findViewById(R.id.output);
         outputListView.setAdapter(mOutputArrayListAdapter);
@@ -344,6 +341,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
         });
     }
 
+    // XXX ToDo
+    // This AsyncTask class should be static or leaks might occur.
+    // Problem is, it need to get preferences from the AppContext and update the outer class's
+    // mClient member. Essentially, I'm doing it wrong and need to rewrite this.
     private class ConnectTask extends AsyncTask<Void, Void, Integer> {
         private Socket mSocket = null;
         private String mServer = null;
@@ -471,6 +472,78 @@ public class MainActivity extends AppCompatActivity implements Callback {
                 });
 
         mDisconnectAlert = alertBuilder.create();
+    }
+
+    protected void doPersonalMessageDialog(String sendToNick)
+    {
+        final String nick = sendToNick;
+
+        // custom dialog
+        final Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.personal_message_entry_dialog);
+        dialog.setTitle(nick);
+
+        final TextView inputEditText = dialog.findViewById(R.id.input);
+        inputEditText.setHorizontallyScrolling(false);
+        inputEditText.setLines(Integer.MAX_VALUE);
+
+        Button sendButton = dialog.findViewById(R.id.dialogButtonSend);
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String message = inputEditText.getText().toString();
+                addMessageToOutput("/m " + nick + " " + message);
+                if (mClient != null) {
+                    mClient.sendPersonalMessage(nick, message);
+                }
+                dialog.dismiss();
+            }
+        });
+
+        Button cancelButton = dialog.findViewById(R.id.dialogButtonCancel);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+    }
+
+    protected void doPrivateMessageInputDialog(String sendToNick)
+    {
+        final String nick = sendToNick;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle(nick);
+
+        // Set up the input
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHorizontallyScrolling(false);
+        input.setLines(Integer.MAX_VALUE);
+        builder.setView(input);
+
+        // Set up th   e buttons
+        builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String message = input.getText().toString();
+                addMessageToOutput("--> <*" + nick + "*>" + message);
+                if (mClient != null) {
+                    mClient.sendPersonalMessage(nick, message);
+                }
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 
     protected synchronized void updateConnectionMenuItemStatus()
