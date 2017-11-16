@@ -147,11 +147,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
     }
 
 
-    private Context mContext = null;
     private Handler mHandler = null;
     private AlertDialog mDisconnectAlert = null;
-
-    private ListView mOutputListView = null;
 
     private ArrayList<String> mOutputArrayList;
     private SpannedAdapter mOutputArrayListAdapter;
@@ -166,9 +163,7 @@ public class MainActivity extends AppCompatActivity implements Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mContext = getApplicationContext();
-
-        String filesDirPath = PathUtils.getStorageDir(mContext).getAbsolutePath();
+        String filesDirPath = PathUtils.getStorageDir(getApplicationContext()).getAbsolutePath();
 
         LogUtil.INSTANCE.SetLogFile(filesDirPath, "log.txt");
 
@@ -283,10 +278,10 @@ public class MainActivity extends AppCompatActivity implements Callback {
         LogUtil.INSTANCE.d(LOGTAG, "setUpScreen()");
         setContentView(R.layout.mainactivity);
 
-        mOutputListView = (ListView) findViewById(R.id.output);
-        mOutputListView.setAdapter(mOutputArrayListAdapter);
+        ListView outputListView = findViewById(R.id.output);
+        outputListView.setAdapter(mOutputArrayListAdapter);
 
-        EditText inputEditText = (EditText) findViewById(R.id.input);
+        EditText inputEditText = findViewById(R.id.input);
         // The following two lines, in conjuction with
         //   android:inputType="text"
         //   android:imeOptions="actionSend"
