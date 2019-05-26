@@ -24,6 +24,8 @@
         android:layout_height="60dp"
         android:layout_alignParentBottom="true"
         android:inputType="text"
+        android:textSize="14sp"
+        android:fontFamily="monospace"
         android:imeOptions="actionSend"/>
 
 </RelativeLayout>
