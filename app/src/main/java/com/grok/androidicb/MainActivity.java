@@ -39,13 +39,14 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -160,12 +161,37 @@ public class MainActivity extends AppCompatActivity implements Callback {
         }
     }
 
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            mScaleFactor *= detector.getScaleFactor();
+
+            // Don't let the object get too small or too large.
+            mScaleFactor = Math.max(0.1f, Math.min(mScaleFactor, 10.0f));
+
+            LogUtil.INSTANCE.d(LOGTAG, "scaling to " + mScaleFactor);
+
+            int fontSize = (int)(12.0f * mScaleFactor);
+
+            for (int i = 0; i < mOutputListView.getCount(); i++) {
+                View v = mOutputListView.getAdapter().getView(i, null, null);
+                SpannedAdapter.ViewHolder vh = (SpannedAdapter.ViewHolder) v.getTag();
+                vh.text.setTextSize(fontSize);
+            }
+
+            return true;
+        }
+    }
 
     private Handler mHandler = null;
     private AlertDialog mDisconnectAlert = null;
 
     private ArrayList<String> mOutputArrayList;
+    private ListView mOutputListView;
     private SpannedAdapter mOutputArrayListAdapter;
+
+    private ScaleGestureDetector mScaleDetector;
+    private float mScaleFactor = 1.f;
 
     private MenuItem mConnectMenuItem;
 
@@ -187,6 +213,8 @@ public class MainActivity extends AppCompatActivity implements Callback {
 
         mOutputArrayList = new ArrayList<>();
         mOutputArrayListAdapter = new SpannedAdapter(this, mOutputArrayList);
+
+        mScaleDetector = new ScaleGestureDetector(this, new ScaleListener());
 
         setupLayout();
 
@@ -287,13 +315,21 @@ public class MainActivity extends AppCompatActivity implements Callback {
         setupLayout();
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        LogUtil.INSTANCE.d(LOGTAG, "onTouchEvent");
+        // Let the ScaleGestureDetector inspect all events.s
+        mScaleDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
+    }
+
     protected void setupLayout()
     {
         LogUtil.INSTANCE.d(LOGTAG, "setUpScreen()");
         setContentView(R.layout.main_activity);
 
-        ListView outputListView = findViewById(R.id.output);
-        outputListView.setAdapter(mOutputArrayListAdapter);
+        mOutputListView = findViewById(R.id.output);
+        mOutputListView.setAdapter(mOutputArrayListAdapter);
 
         EditText inputEditText = findViewById(R.id.input);
         // The following two lines, in conjunction with
